@@ -1,17 +1,11 @@
-import React, { useState } from 'react';
+import { BarChartOutlined, BookOutlined, ReadOutlined, SettingOutlined, SyncOutlined } from '@ant-design/icons';
 import { Layout, Menu } from 'antd';
-import {
-  BookOutlined,
-  SyncOutlined,
-  BarChartOutlined,
-  ReadOutlined,
-  SettingOutlined,
-} from '@ant-design/icons';
-import { Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { createStyles } from 'antd-style';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { AppHeader } from './AppHeader';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { VocabularyPage } from '../Words/VocabularyPage';
+import { AppHeader } from './AppHeader';
 
 const { Sider, Content } = Layout;
 

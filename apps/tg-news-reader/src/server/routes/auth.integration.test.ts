@@ -29,6 +29,7 @@ vi.mock('../db/index.js', () => ({
   },
 }));
 
+import { authCookies } from '../middleware/authCookies.js';
 import authRouter from './auth.js';
 
 function createApp() {
@@ -70,8 +71,8 @@ describe('Auth routes (integration)', () => {
 
       // Session cookies should be set
       const setCookie = res.headers.get('set-cookie');
-      expect(setCookie).toContain('refresh_token=');
-      expect(setCookie).toContain('media_token=');
+      expect(setCookie).toContain(`${authCookies.refresh}=`);
+      expect(setCookie).toContain(`${authCookies.media}=`);
       expect(setCookie).toContain('Path=/api/media');
     });
 
@@ -127,14 +128,14 @@ describe('Auth routes (integration)', () => {
 
       const res = await app.request('/api/auth/refresh', {
         method: 'POST',
-        headers: { Cookie: `refresh_token=${session.cookieValue}` },
+        headers: { Cookie: `${authCookies.refresh}=${session.cookieValue}` },
       });
 
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.accessToken).toBeDefined();
       expect(body.user.email).toBe('r@test.com');
-      expect(res.headers.get('set-cookie')).toContain('media_token=');
+      expect(res.headers.get('set-cookie')).toContain(`${authCookies.media}=`);
     });
 
     it('returns 401 without a refresh cookie', async () => {
@@ -148,7 +149,7 @@ describe('Auth routes (integration)', () => {
 
       const res = await app.request('/api/auth/refresh', {
         method: 'POST',
-        headers: { Cookie: `refresh_token=${session.id}:wrong-token` },
+        headers: { Cookie: `${authCookies.refresh}=${session.id}:wrong-token` },
       });
 
       expect(res.status).toBe(401);
@@ -164,18 +165,18 @@ describe('Auth routes (integration)', () => {
 
       const res = await app.request('/api/auth/logout', {
         method: 'POST',
-        headers: { Cookie: `refresh_token=${session.cookieValue}` },
+        headers: { Cookie: `${authCookies.refresh}=${session.cookieValue}` },
       });
 
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.success).toBe(true);
-      expect(res.headers.get('set-cookie')).toContain('media_token=');
+      expect(res.headers.get('set-cookie')).toContain(`${authCookies.media}=`);
 
       // Session should be gone — refresh should fail
       const refreshRes = await app.request('/api/auth/refresh', {
         method: 'POST',
-        headers: { Cookie: `refresh_token=${session.cookieValue}` },
+        headers: { Cookie: `${authCookies.refresh}=${session.cookieValue}` },
       });
       expect(refreshRes.status).toBe(401);
     });

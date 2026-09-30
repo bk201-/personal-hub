@@ -41,6 +41,7 @@ vi.mock('../db/index.js', () => ({
 }));
 
 import { authMiddleware } from '../middleware/auth.js';
+import { authCookies } from '../middleware/authCookies.js';
 import mediaRouter from './media.js';
 
 function createApp() {
@@ -68,7 +69,7 @@ describe('Media routes (integration)', () => {
     headers = await authHeaders(user.id);
     const session = await createTestSession(testDb.db, user.id);
     const mediaToken = await generateTestToken(user.id, { sessionId: session.id });
-    mediaCookie = `media_token=${mediaToken}`;
+    mediaCookie = `${authCookies.media}=${mediaToken}`;
   });
 
   beforeEach(() => {

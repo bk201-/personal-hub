@@ -1,8 +1,8 @@
+import { mkdirSync } from 'fs';
+import { join } from 'path';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from './schema.js';
-import { mkdirSync } from 'fs';
-import { join } from 'path';
 
 let clientUrl: string;
 let authToken: string | undefined;
@@ -24,4 +24,3 @@ export const client = createClient({ url: clientUrl, authToken });
 // PRAGMA foreign_keys only works for local SQLite (no-op on remote, but harmless)
 await client.execute('PRAGMA foreign_keys = ON');
 export const db = drizzle(client, { schema });
-

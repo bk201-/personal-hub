@@ -1,3 +1,5 @@
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 /**
  * Imports words from data/ocr-output/words-final.json into the database.
  *
@@ -8,8 +10,6 @@
  *   npm run import:words -- --email admin@example.com --password MyPass123 --file ./data/ocr-output/words-final.json
  */
 import 'dotenv/config';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 
 // ─── Parse args ───────────────────────────────────────────────────────────────
 
@@ -26,7 +26,9 @@ const serverUrl = getArg('url') ?? 'http://localhost:3173';
 const BATCH = 100;
 
 if (!email || !password) {
-  console.error('Usage: npm run import:words -- --email <email> --password <password> [--file <path>] [--url <server>]');
+  console.error(
+    'Usage: npm run import:words -- --email <email> --password <password> [--file <path>] [--url <server>]',
+  );
   process.exit(1);
 }
 
@@ -98,4 +100,3 @@ console.log(`\n✅ Import complete:`);
 console.log(`   Inserted: ${totalInserted}`);
 console.log(`   Skipped:  ${totalSkipped} (already existed)`);
 console.log(`   Total:    ${totalInserted + totalSkipped}`);
-

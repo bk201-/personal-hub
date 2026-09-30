@@ -70,6 +70,7 @@ function makeChannel(overrides: Partial<Channel> = {}): Channel {
     channelType: 'news',
     sortOrder: 0,
     isUnavailable: 0,
+    filterForwards: 0,
     unreadCount: 5,
     totalNewsCount: 10,
     createdAt: 1700000000,

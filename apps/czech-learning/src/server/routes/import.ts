@@ -1,7 +1,7 @@
+import { inArray } from 'drizzle-orm';
 import { Hono } from 'hono';
 import { db } from '../db/index.js';
 import { words } from '../db/schema.js';
-import { inArray } from 'drizzle-orm';
 import { logger } from '../logger.js';
 import type { AppEnv } from '../types.js';
 
@@ -57,10 +57,7 @@ router.post('/words', async (c) => {
 
   // Deduplicate: find existing czech values in one query
   const czechValues = [...new Set(incoming.map((w) => w.czech))];
-  const existingRows = await db
-    .select({ czech: words.czech })
-    .from(words)
-    .where(inArray(words.czech, czechValues));
+  const existingRows = await db.select({ czech: words.czech }).from(words).where(inArray(words.czech, czechValues));
   const existingSet = new Set(existingRows.map((r) => r.czech));
 
   const toInsert = incoming.filter((w) => !existingSet.has(w.czech));
@@ -81,11 +78,11 @@ router.post('/words', async (c) => {
       english: w.english ?? null,
       pos: (w.pos as typeof words.$inferInsert.pos) ?? null,
       gender: w.gender ?? null,
-      numberType: (w.numberType ?? w.number_type) ?? null,
-      declensionClass: (w.declensionClass ?? w.declension_class) ?? null,
+      numberType: w.numberType ?? w.number_type ?? null,
+      declensionClass: w.declensionClass ?? w.declension_class ?? null,
       aspect: w.aspect ?? null,
-      verbPair: (w.verbPair ?? w.verb_pair) ?? null,
-      conjugationClass: (w.conjugationClass ?? w.conjugation_class) ?? null,
+      verbPair: w.verbPair ?? w.verb_pair ?? null,
+      conjugationClass: w.conjugationClass ?? w.conjugation_class ?? null,
       notes: w.notes ?? null,
       lesson: w.lesson ?? null,
       source: (w.source ?? 'textbook') as typeof words.$inferInsert.source,
@@ -100,4 +97,3 @@ router.post('/words', async (c) => {
 });
 
 export default router;
-

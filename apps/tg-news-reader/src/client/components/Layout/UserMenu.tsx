@@ -8,6 +8,7 @@ import {
   TagOutlined,
   TranslationOutlined,
 } from '@ant-design/icons';
+import { LanguageSwitcher } from '@personal-hub/browser/ui';
 import { Button, Modal, Typography } from 'antd';
 import type { App } from 'antd';
 import { createStyles } from 'antd-style';
@@ -33,51 +34,38 @@ const ICON_PLUS = <PlusOutlined />;
 const stopPropagation = (e: React.MouseEvent | React.KeyboardEvent) => e.stopPropagation();
 
 /** Language switcher row content — extracted to keep menu items free of inline closures. */
-function LangSwitcher({
-  className,
-  labelClassName,
-  btnClassName,
-  label,
-  currentLang,
-}: {
-  className: string;
-  labelClassName: string;
-  btnClassName: string;
-  label: string;
-  currentLang: string;
-}) {
+function LangSwitcher({ label, currentLang }: { label: string; currentLang: string }) {
   const { i18n } = useTranslation();
-  const isRu = currentLang.startsWith('ru');
-
-  const handleEn = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      void i18n.changeLanguage('en');
-    },
-    [i18n],
-  );
-
-  const handleRu = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      void i18n.changeLanguage('ru');
-    },
-    [i18n],
-  );
-
   return (
-    <div className={className} onClick={stopPropagation}>
-      <span className={labelClassName}>{label}:</span>
-      <Button size="small" type={!isRu ? 'primary' : 'default'} onClick={handleEn} className={btnClassName}>
-        <FlagUS size={18} /> EN
-      </Button>
-      <Button size="small" type={isRu ? 'primary' : 'default'} onClick={handleRu} className={btnClassName}>
-        <FlagRU size={18} /> RU
-      </Button>
-    </div>
+    <LanguageSwitcher
+      label={label}
+      value={currentLang.startsWith('ru') ? 'ru' : 'en'}
+      languages={languages}
+      onChange={(language) => {
+        void i18n.changeLanguage(language);
+      }}
+    />
   );
 }
 
+const languages = [
+  {
+    value: 'en',
+    label: (
+      <>
+        <FlagUS size={18} /> EN
+      </>
+    ),
+  },
+  {
+    value: 'ru',
+    label: (
+      <>
+        <FlagRU size={18} /> RU
+      </>
+    ),
+  },
+];
 const FONT_SIZE_STEP = 10;
 const FONT_SIZE_MIN = 100;
 const FONT_SIZE_MAX = 200;
@@ -138,19 +126,6 @@ const useStyles = createStyles(({ css, token }) => ({
   `,
   totpActiveIcon: css`
     color: ${token.colorSuccess};
-  `,
-  langSwitcher: css`
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  `,
-  langLabel: css`
-    margin-right: 4px;
-  `,
-  langBtn: css`
-    display: flex;
-    align-items: center;
-    gap: 4px;
   `,
   fontSizeRow: css`
     display: flex;
@@ -262,15 +237,7 @@ export function useUserMenuItems({ message, onOpenTotp }: UserMenuProps) {
     {
       key: 'language',
       icon: ICON_TRANSLATION,
-      label: (
-        <LangSwitcher
-          className={styles.langSwitcher}
-          labelClassName={styles.langLabel}
-          btnClassName={styles.langBtn}
-          label={t('header.user_menu.language')}
-          currentLang={i18n.language}
-        />
-      ),
+      label: <LangSwitcher label={t('header.user_menu.language')} currentLang={i18n.language} />,
     },
     { type: 'divider' as const },
     {

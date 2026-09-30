@@ -1,5 +1,5 @@
-import { client } from './index.js';
 import { logger } from '../logger.js';
+import { client } from './index.js';
 
 export async function runMigration(): Promise<void> {
   await client.execute('PRAGMA foreign_keys = ON');
@@ -28,15 +28,6 @@ export async function runMigration(): Promise<void> {
   `);
 
   // ─── Words table (Phase 2) ───────────────────────────────────────────────────
-  // If the table exists but is missing the 'pos' column (old schema),
-  // drop and recreate — safe at this stage because there is no production data yet.
-  const wordsCols = await client.execute('PRAGMA table_info(words)');
-  const existingCols = wordsCols.rows.map((r) => r[1] as string);
-  if (existingCols.length > 0 && !existingCols.includes('pos')) {
-    logger.warn({ module: 'db' }, 'Old words schema detected — recreating table with POS support');
-    await client.execute('DROP TABLE IF EXISTS words');
-  }
-
   await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS words (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,12 +39,37 @@ export async function runMigration(): Promise<void> {
       number_type TEXT CHECK(number_type IN ('singular','plural')),
       aspect TEXT CHECK(aspect IN ('perfective','imperfective')),
       verb_pair TEXT,
+      conjugation_class TEXT,
+      declension_class TEXT,
       notes TEXT,
       lesson INTEGER,
       source TEXT CHECK(source IN ('textbook','manual')),
       seznam_url TEXT,
       created_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+  `);
+
+  // Upgrade pre-grammar databases additively; an imported working tree has no bundled database.
+  const wordsCols = await client.execute('PRAGMA table_info(words)');
+  const existingCols = new Set(wordsCols.rows.map((row) => String(row.name)));
+  const optionalColumns = {
+    english: 'TEXT',
+    pos: 'TEXT',
+    gender: 'TEXT',
+    number_type: 'TEXT',
+    aspect: 'TEXT',
+    verb_pair: 'TEXT',
+    conjugation_class: 'TEXT',
+    declension_class: 'TEXT',
+    notes: 'TEXT',
+    lesson: 'INTEGER',
+    source: 'TEXT',
+    seznam_url: 'TEXT',
+  };
+  for (const [name, type] of Object.entries(optionalColumns)) {
+    if (!existingCols.has(name)) await client.execute(`ALTER TABLE words ADD COLUMN ${name} ${type}`);
+  }
+  await client.executeMultiple(`
     CREATE INDEX IF NOT EXISTS idx_words_lesson ON words(lesson);
     CREATE INDEX IF NOT EXISTS idx_words_gender ON words(gender);
     CREATE INDEX IF NOT EXISTS idx_words_pos ON words(pos);

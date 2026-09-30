@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Input, Select, Space, Tag, Popconfirm, Typography, App, Tooltip } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, LinkOutlined, SearchOutlined } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { createStyles } from 'antd-style';
-import { useTranslation } from 'react-i18next';
-import type { TableColumnsType, TablePaginationConfig } from 'antd';
-import { api } from '../../api/client';
+import { DeleteOutlined, EditOutlined, LinkOutlined, PlusOutlined, SearchOutlined } from '@ant-design/icons';
 import type { Word, WordGender, WordPos } from '@shared/types';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { App, Button, Input, Popconfirm, Select, Space, Table, Tag, Tooltip, Typography } from 'antd';
+import type { TableColumnsType, TablePaginationConfig } from 'antd';
+import { createStyles } from 'antd-style';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { api } from '../../api/client';
 import { WordFormModal } from './WordFormModal';
 
 const { Title } = Typography;
@@ -98,8 +98,13 @@ export function VocabularyPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => { setSearch(searchInput); setPage(1); }, 400);
-    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    debounceRef.current = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
   }, [searchInput]);
 
   const buildQS = () => {
@@ -120,7 +125,9 @@ export function VocabularyPage() {
 
   const { mutate: deleteWord, isPending: isDeleting } = useMutation({
     mutationFn: (id: number) => api.delete<{ success: boolean }>(`/words/${id}`),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['words'] }); },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['words'] });
+    },
     onError: (err: Error) => void message.error(err.message),
   });
 
@@ -145,8 +152,13 @@ export function VocabularyPage() {
           <strong>{czech}</strong>
           {record.seznamUrl && (
             <Tooltip title={t('words.open_seznam')}>
-              <a href={record.seznamUrl} target="_blank" rel="noopener noreferrer"
-                className={styles.listLink} onClick={(e) => e.stopPropagation()}>
+              <a
+                href={record.seznamUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.listLink}
+                onClick={(e) => e.stopPropagation()}
+              >
                 <LinkOutlined />
               </a>
             </Tooltip>
@@ -189,9 +201,7 @@ export function VocabularyPage() {
             <span style={{ fontSize: 11, opacity: 0.7 }}>↔ {record.verbPair}</span>
           )}
           {record.pos === 'noun' && record.declensionClass && (
-            <span style={{ fontSize: 11, opacity: 0.65 }}>
-              {t(`words.decl_${record.declensionClass}`)}
-            </span>
+            <span style={{ fontSize: 11, opacity: 0.65 }}>{t(`words.decl_${record.declensionClass}`)}</span>
           )}
           {record.pos === 'noun' && record.numberType && (
             <Tag color="default" style={{ marginInlineEnd: 0, fontSize: 11 }}>
@@ -206,7 +216,7 @@ export function VocabularyPage() {
       dataIndex: 'lesson',
       key: 'lesson',
       width: 80,
-      render: (l: number | null) => (l != null ? l : '—'),
+      render: (l: number | null) => l ?? '—',
     },
     {
       title: t('words.col_notes'),
@@ -220,8 +230,15 @@ export function VocabularyPage() {
       width: 80,
       render: (_: unknown, record: Word) => (
         <Space size={4}>
-          <Button type="text" size="small" icon={<EditOutlined />}
-            onClick={() => { setEditWord(record); setModalOpen(true); }} />
+          <Button
+            type="text"
+            size="small"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditWord(record);
+              setModalOpen(true);
+            }}
+          />
           <Popconfirm
             title={t('common.delete') + '?'}
             onConfirm={() => deleteWord(record.id)}
@@ -239,9 +256,17 @@ export function VocabularyPage() {
   return (
     <>
       <div className={styles.pageHeader}>
-        <Title level={3} className={styles.title}>{t('words.title')}</Title>
-        <Button type="primary" icon={<PlusOutlined />}
-          onClick={() => { setEditWord(null); setModalOpen(true); }}>
+        <Title level={3} className={styles.title}>
+          {t('words.title')}
+        </Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => {
+            setEditWord(null);
+            setModalOpen(true);
+          }}
+        >
           {t('words.add')}
         </Button>
       </div>
@@ -259,24 +284,38 @@ export function VocabularyPage() {
           placeholder={t('words.col_pos')}
           allowClear
           value={pos}
-          onChange={(v) => { setPos(v); setPage(1); }}
+          onChange={(v) => {
+            setPos(v);
+            setPage(1);
+          }}
           style={{ width: 160 }}
           options={[
-            'noun','verb','adjective','adverb','pronoun',
-            'numeral','preposition','conjunction','interjection','phrase',
+            'noun',
+            'verb',
+            'adjective',
+            'adverb',
+            'pronoun',
+            'numeral',
+            'preposition',
+            'conjunction',
+            'interjection',
+            'phrase',
           ].map((p) => ({ value: p, label: t(`words.pos_${p}`) }))}
         />
         <Select<WordGender | undefined>
           placeholder={t('words.col_gender')}
           allowClear
           value={gender}
-          onChange={(v) => { setGender(v); setPage(1); }}
+          onChange={(v) => {
+            setGender(v);
+            setPage(1);
+          }}
           style={{ width: 150 }}
           options={[
             { value: 'ma', label: t('words.gender_ma') },
             { value: 'mi', label: t('words.gender_mi') },
-            { value: 'f',  label: t('words.gender_f') },
-            { value: 'n',  label: t('words.gender_n') },
+            { value: 'f', label: t('words.gender_f') },
+            { value: 'n', label: t('words.gender_n') },
           ]}
         />
         <Input
@@ -305,12 +344,7 @@ export function VocabularyPage() {
         size="middle"
       />
 
-      <WordFormModal
-        open={modalOpen}
-        word={editWord}
-        onClose={() => setModalOpen(false)}
-      />
+      <WordFormModal open={modalOpen} word={editWord} onClose={() => setModalOpen(false)} />
     </>
   );
 }
-

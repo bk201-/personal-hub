@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
-import { Form, Input, Button, Typography, Card, Alert, Space } from 'antd';
 import { LockOutlined, MailOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Form, Input, Space, Typography } from 'antd';
 import { createStyles } from 'antd-style';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore, type AuthUser } from '../../store/authStore';
+import { useAuthStore } from '../../store/authStore';
+import type { AuthUser } from '../../store/authStore';
 
 const { Title, Text } = Typography;
 
@@ -145,7 +146,12 @@ export function LoginPage() {
               <Text>{t('auth.totp_prompt')}</Text>
               <Input.OTP length={6} value={totpCode} onChange={setTotpCode} size="large" />
               <Space style={{ width: '100%', justifyContent: 'space-between' }}>
-                <Button onClick={() => { setStep('credentials'); setError(null); }}>
+                <Button
+                  onClick={() => {
+                    setStep('credentials');
+                    setError(null);
+                  }}
+                >
                   {t('auth.back')}
                 </Button>
                 <Button

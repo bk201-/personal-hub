@@ -1,5 +1,5 @@
-import React from 'react';
 import { createStyles } from 'antd-style';
+import React from 'react';
 
 const useStyles = createStyles(({ css }) => ({
   flag: css`
@@ -26,4 +26,3 @@ export function FlagRU({ size = 20 }: FlagProps) {
     </svg>
   );
 }
-

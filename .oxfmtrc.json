@@ -26,5 +26,15 @@
       }
     }
   ],
-  "ignorePatterns": [".idea", "coverage", "data", "dist", "node_modules", "plans", "package-lock.json", "*.sqlite"]
+  "ignorePatterns": [
+    "**/node_modules",
+    "**/dist",
+    "**/coverage",
+    "**/data",
+    "**/.idea",
+    ".local-validation",
+    "docs/archive",
+    "plans",
+    "package-lock.json"
+  ]
 }

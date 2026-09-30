@@ -1,4 +1,4 @@
-export const JWT_SECRET = process.env.JWT_SECRET ?? 'dev-secret-change-in-production';
+export const JWT_SECRET = process.env.JWT_SECRET ?? 'tg-news-reader-dev-secret-change-in-production';
 export const JWT_ACCESS_EXPIRES_SEC = 15 * 60; // 15 min
 export const REFRESH_EXPIRES_DAYS = 7;
 
@@ -141,6 +141,9 @@ export const ARTICLE_WORKER_CONCURRENCY = parseInt(process.env.ARTICLE_WORKER_CO
  */
 export const ARTICLE_MAX_HTML_BYTES = parseInt(process.env.ARTICLE_MAX_HTML_MB ?? '3', 10) * 1024 * 1024;
 
-if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-secret-change-in-production') {
+if (
+  process.env.NODE_ENV === 'production' &&
+  (JWT_SECRET === 'tg-news-reader-dev-secret-change-in-production' || JWT_SECRET === 'dev-secret-change-in-production')
+) {
   throw new Error('JWT_SECRET env variable must be set in production!');
 }

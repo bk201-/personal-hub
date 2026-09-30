@@ -8,4 +8,3 @@ export default defineConfig({
     url: 'file:./data/db.sqlite',
   },
 });
-

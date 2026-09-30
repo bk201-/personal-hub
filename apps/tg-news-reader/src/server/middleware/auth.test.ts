@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../config.js', () => ({
   JWT_SECRET: 'test-secret-key',
 }));
+vi.mock('../db/index.js', () => ({ db: {} }));
 
 import { sign } from 'hono/jwt';
 import { authMiddleware } from './auth.js';

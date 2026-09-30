@@ -15,4 +15,3 @@
   },
   "include": ["scripts", "src/server", "src/shared"]
 }
-

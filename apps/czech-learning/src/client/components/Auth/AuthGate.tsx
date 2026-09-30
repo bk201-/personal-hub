@@ -1,9 +1,10 @@
-import React, { useEffect } from 'react';
 import { Spin } from 'antd';
 import { createStyles } from 'antd-style';
-import { useAuthStore, type AuthUser } from '../../store/authStore';
-import { LoginPage } from './LoginPage';
+import React, { useEffect } from 'react';
 import { logger } from '../../logger';
+import { useAuthStore } from '../../store/authStore';
+import type { AuthUser } from '../../store/authStore';
+import { LoginPage } from './LoginPage';
 
 const useStyles = createStyles(({ css }) => ({
   loading: css`
@@ -56,4 +57,3 @@ export function AuthGate({ children }: Props) {
 
   return <>{children}</>;
 }
-

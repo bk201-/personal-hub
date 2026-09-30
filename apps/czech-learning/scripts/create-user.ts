@@ -1,14 +1,14 @@
+import bcrypt from 'bcryptjs';
 /**
  * Creates the initial admin user in the database.
  * Usage: npm run auth:create-user -- <email> <password>
  * Example: npm run auth:create-user -- admin@example.com MySecurePassword123!
  */
 import 'dotenv/config';
-import { db } from '../src/server/db/index.js';
-import { users } from '../src/server/db/schema.js';
-import { runMigration } from '../src/server/db/migrate.js';
-import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
+import { db } from '../src/server/db/index.js';
+import { runMigration } from '../src/server/db/migrate.js';
+import { users } from '../src/server/db/schema.js';
 
 const [, , email, password] = process.argv;
 
@@ -49,4 +49,3 @@ console.log(`   Email: ${user.email}`);
 console.log(`   ID:    ${user.id}`);
 console.log(`   Role:  ${user.role}`);
 process.exit(0);
-

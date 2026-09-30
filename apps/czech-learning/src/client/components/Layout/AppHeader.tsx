@@ -1,37 +1,36 @@
-import React, { useState } from 'react';
-import { Layout, Typography, Button, Dropdown, App } from 'antd';
-import {
-  MoonOutlined,
-  SunOutlined,
-  UserOutlined,
-  LogoutOutlined,
-  TranslationOutlined,
-  SafetyCertificateOutlined,
-  QrcodeOutlined,
-} from '@ant-design/icons';
+import { LogoutOutlined, QrcodeOutlined, SafetyCertificateOutlined, TranslationOutlined } from '@ant-design/icons';
+import { HeaderBar, LanguageSwitcher, ThemeToggle, UserMenu } from '@personal-hub/browser/ui';
+import { App, Typography } from 'antd';
 import { createStyles } from 'antd-style';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FlagRU, FlagUS } from '../Flags';
-import { useUIStore } from '../../store/uiStore';
-import { useAuthStore } from '../../store/authStore';
 import { api } from '../../api/client';
+import { useAuthStore } from '../../store/authStore';
+import { useUIStore } from '../../store/uiStore';
+import { FlagRU, FlagUS } from '../Flags';
 import { TotpSetupModal } from './TotpSetupModal';
 
-const { Header } = Layout;
 const { Title, Text } = Typography;
+const languages = [
+  {
+    value: 'en',
+    label: (
+      <>
+        <FlagUS size={18} /> EN
+      </>
+    ),
+  },
+  {
+    value: 'ru',
+    label: (
+      <>
+        <FlagRU size={18} /> RU
+      </>
+    ),
+  },
+];
 
 const useStyles = createStyles(({ css, token }) => ({
-  header: css`
-    display: flex;
-    align-items: center;
-    background: ${token.colorPrimary};
-    padding: 0 24px;
-    gap: 12px;
-  `,
-  iconBtn: css`
-    color: ${token.colorTextLightSolid};
-    flex-shrink: 0;
-  `,
   logoEmoji: css`
     font-size: 24px;
     flex-shrink: 0;
@@ -47,30 +46,11 @@ const useStyles = createStyles(({ css, token }) => ({
     white-space: nowrap;
     line-height: 1.2;
   `,
-  actions: css`
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  `,
   emailText: css`
     font-size: 12px;
   `,
   totpActiveIcon: css`
     color: ${token.colorSuccess};
-  `,
-  langSwitcher: css`
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  `,
-  langLabel: css`
-    margin-right: 4px;
-  `,
-  langBtn: css`
-    display: flex;
-    align-items: center;
-    gap: 4px;
   `,
 }));
 
@@ -123,31 +103,14 @@ export function AppHeader() {
       key: 'language',
       icon: <TranslationOutlined />,
       label: (
-        <div className={styles.langSwitcher} onClick={(e) => e.stopPropagation()}>
-          <span className={styles.langLabel}>{t('header.user_menu.language')}:</span>
-          <Button
-            size="small"
-            type={!i18n.language.startsWith('ru') ? 'primary' : 'default'}
-            onClick={(e) => {
-              e.stopPropagation();
-              void i18n.changeLanguage('en');
-            }}
-            className={styles.langBtn}
-          >
-            <FlagUS size={18} /> EN
-          </Button>
-          <Button
-            size="small"
-            type={i18n.language.startsWith('ru') ? 'primary' : 'default'}
-            onClick={(e) => {
-              e.stopPropagation();
-              void i18n.changeLanguage('ru');
-            }}
-            className={styles.langBtn}
-          >
-            <FlagRU size={18} /> RU
-          </Button>
-        </div>
+        <LanguageSwitcher
+          label={t('header.user_menu.language')}
+          value={i18n.language.startsWith('ru') ? 'ru' : 'en'}
+          languages={languages}
+          onChange={(language) => {
+            void i18n.changeLanguage(language);
+          }}
+        />
       ),
     },
     { type: 'divider' as const },
@@ -162,29 +125,24 @@ export function AppHeader() {
 
   return (
     <>
-      <Header className={styles.header}>
+      <HeaderBar
+        actions={
+          <>
+            <ThemeToggle
+              isDark={isDarkTheme}
+              onClick={toggleTheme}
+              lightLabel={t('header.theme_light')}
+              darkLabel={t('header.theme_dark')}
+            />
+            <UserMenu items={userMenuItems} label={t('header.user_menu_label')} />
+          </>
+        }
+      >
         <span className={styles.logoEmoji}>🇨🇿</span>
         <Title level={4} className={styles.title}>
           Czech Learning
         </Title>
-        <div className={styles.actions}>
-          <Button
-            type="text"
-            icon={isDarkTheme ? <SunOutlined /> : <MoonOutlined />}
-            onClick={toggleTheme}
-            aria-label={isDarkTheme ? t('header.theme_light') : t('header.theme_dark')}
-            className={styles.iconBtn}
-          />
-          <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
-            <Button
-              type="text"
-              icon={<UserOutlined />}
-              aria-label={t('header.user_menu_label')}
-              className={styles.iconBtn}
-            />
-          </Dropdown>
-        </div>
-      </Header>
+      </HeaderBar>
 
       <TotpSetupModal open={totpModalOpen} onClose={() => setTotpModalOpen(false)} />
     </>

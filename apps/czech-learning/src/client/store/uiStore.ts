@@ -14,4 +14,3 @@ export const useUIStore = create<UIStore>()((set) => ({
       return { isDarkTheme: next };
     }),
 }));
-

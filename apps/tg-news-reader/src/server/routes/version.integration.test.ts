@@ -1,3 +1,4 @@
+import type { AuthEnv } from '@personal-hub/auth-server';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
 import packageJson from '../../../package.json' with { type: 'json' };
@@ -7,7 +8,7 @@ import versionRouter from './version.js';
 const APP_VERSION: string = packageJson.version;
 
 function createApp() {
-  const app = new Hono();
+  const app = new Hono<AuthEnv>();
   const publicPaths = new Set(['/api/version']);
 
   app.use('/api/*', async (c, next) => {
@@ -26,6 +27,7 @@ describe('Version route (integration)', () => {
     const res = await app.request('/api/version');
 
     expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({ version: APP_VERSION });
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    await expect(res.json()).resolves.toEqual({ version: APP_VERSION, buildId: 'tg-news-reader:development' });
   });
 });

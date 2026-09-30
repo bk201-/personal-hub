@@ -1,9 +1,7 @@
-import { App as AntApp, ConfigProvider, theme } from 'antd';
-import { StyleProvider } from 'antd-style';
+import { ThemeProvider } from '@personal-hub/browser/ui';
 import enUS from 'antd/locale/en_US';
 import ruRU from 'antd/locale/ru_RU';
 import dayjs from 'dayjs';
-import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AuthGate } from './components/Auth/AuthGate';
 import { AppErrorBoundary } from './components/common/AppErrorBoundary';
@@ -20,27 +18,14 @@ export function App() {
   // Keep dayjs locale in sync with UI language
   dayjs.locale(isRu ? 'ru' : 'en');
 
-  const antdTheme = useMemo(
-    () => ({
-      algorithm: isDarkTheme ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      cssVar: { prefix: 'tgr' },
-      hashed: false,
-    }),
-    [isDarkTheme],
-  );
-
   return (
-    <ConfigProvider locale={antdLocale} theme={antdTheme}>
-      <StyleProvider>
-        <AntApp>
-          <AppErrorBoundary>
-            <RateLimitBanner />
-            <AuthGate>
-              <AppLayout />
-            </AuthGate>
-          </AppErrorBoundary>
-        </AntApp>
-      </StyleProvider>
-    </ConfigProvider>
+    <ThemeProvider locale={antdLocale} isDark={isDarkTheme} prefix="tgr">
+      <AppErrorBoundary>
+        <RateLimitBanner />
+        <AuthGate>
+          <AppLayout />
+        </AuthGate>
+      </AppErrorBoundary>
+    </ThemeProvider>
   );
 }

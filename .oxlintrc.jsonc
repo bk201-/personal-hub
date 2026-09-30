@@ -9,10 +9,21 @@
     "es2024": true,
     "node": true
   },
-  "ignorePatterns": [".agents", ".github", ".idea", "coverage", "data", "dist", "node_modules", "plans", "public"],
+  "ignorePatterns": [
+    ".agents",
+    "docs/archive",
+    ".local-validation",
+    "**/.idea",
+    "**/coverage",
+    "**/data",
+    "**/dist",
+    "**/node_modules",
+    "plans",
+    "**/public"
+  ],
   "overrides": [
     {
-      "files": ["src/client/**/*.{ts,tsx}", "src/shared/**/*.ts", "src/server/**/*.ts", "scripts/**/*.ts"],
+      "files": ["**/src/**/*.{ts,tsx}", "**/scripts/**/*.ts"],
       "rules": {
         // Correctness
         // NOTE: rules omitted below are disabled for TypeScript files — the TypeScript compiler already catches them
@@ -286,14 +297,14 @@
       }
     },
     {
-      "files": ["src/server/**/*.ts", "scripts/**/*.ts"],
+      "files": ["apps/*/src/server/**/*.ts", "scripts/**/*.ts"],
       "env": {
         "node": true,
         "builtin": true
       }
     },
     {
-      "files": ["src/client/**/*.{ts,tsx}"],
+      "files": ["apps/*/src/client/**/*.{ts,tsx}"],
       "env": {
         "browser": true
       }

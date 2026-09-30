@@ -327,5 +327,5 @@ export const NewsListItem = memo(
     prev.item === next.item &&
     prev.isSelected === next.isSelected &&
     prev.isFiltered === next.isFiltered &&
-    prev.showAll === next.showAll,
+    prev.newsFilterMode === next.newsFilterMode,
 );

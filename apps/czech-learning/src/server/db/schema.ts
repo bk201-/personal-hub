@@ -1,6 +1,5 @@
-import { sqliteTable, integer, text } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
-
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -36,15 +35,23 @@ export const words = sqliteTable('words', {
   russian: text('russian').notNull(),
   english: text('english'), // reserved for Czech ↔ English future mode
   pos: text('pos').$type<
-    'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' |
-    'numeral' | 'preposition' | 'conjunction' | 'interjection' | 'phrase'
+    | 'noun'
+    | 'verb'
+    | 'adjective'
+    | 'adverb'
+    | 'pronoun'
+    | 'numeral'
+    | 'preposition'
+    | 'conjunction'
+    | 'interjection'
+    | 'phrase'
   >(),
-  gender: text('gender').$type<'ma' | 'mi' | 'f' | 'n'>(),     // noun: animate/inanimate/fem/neuter
+  gender: text('gender').$type<'ma' | 'mi' | 'f' | 'n'>(), // noun: animate/inanimate/fem/neuter
   numberType: text('number_type').$type<'singular' | 'plural'>(), // singularia/pluralia tantum
   aspect: text('aspect').$type<'perfective' | 'imperfective'>(), // verb aspect
-  verbPair: text('verb_pair'),                                    // paired perf↔imperf verb
-  conjugationClass: text('conjugation_class'),                   // verb: I-nese/II-tiskne/III-kryje/IV-prosi/V-dela
-  declensionClass: text('declension_class'),                     // noun: pan/muz/hrad/stroj/zena/ruze/pisen/kost/mesto/more/kure/staveni
+  verbPair: text('verb_pair'), // paired perf↔imperf verb
+  conjugationClass: text('conjugation_class'), // verb: I-nese/II-tiskne/III-kryje/IV-prosi/V-dela
+  declensionClass: text('declension_class'), // noun: pan/muz/hrad/stroj/zena/ruze/pisen/kost/mesto/more/kure/staveni
   notes: text('notes'),
   lesson: integer('lesson'),
   source: text('source').$type<'textbook' | 'manual'>(),

@@ -1,19 +1,20 @@
+import { ThemeProvider } from '@personal-hub/browser/ui';
+import { MutationCache, QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import enUS from 'antd/locale/en_US';
+import ruRU from 'antd/locale/ru_RU';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import { useTranslation } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
-import { QueryClient, QueryClientProvider, QueryCache, MutationCache } from '@tanstack/react-query';
-import { ConfigProvider, App as AntApp, theme } from 'antd';
-import { StyleProvider } from 'antd-style';
-import ruRU from 'antd/locale/ru_RU';
-import enUS from 'antd/locale/en_US';
+import { ApiError } from './api/client';
 import { AuthGate } from './components/Auth/AuthGate';
 import { Dashboard } from './components/Layout/Dashboard';
-import { useTranslation } from 'react-i18next';
-import { useUIStore } from './store/uiStore';
-import { logger } from './logger';
-import { ApiError } from './api/client';
-import './styles.css';
+import { RateLimitBanner } from './components/Layout/RateLimitBanner';
+import { VersionBanner } from './components/Layout/VersionBanner';
 import './i18n';
+import { logger } from './logger';
+import { useUIStore } from './store/uiStore';
+import './styles.css';
 
 // ─── Global JS error handlers ─────────────────────────────────────────────────
 
@@ -65,22 +66,13 @@ function ThemedApp() {
   const antdLocale = isRu ? ruRU : enUS;
 
   return (
-    <ConfigProvider
-      locale={antdLocale}
-      theme={{
-        algorithm: isDarkTheme ? theme.darkAlgorithm : theme.defaultAlgorithm,
-        cssVar: { prefix: 'cj' },
-        hashed: false,
-      }}
-    >
-      <StyleProvider>
-        <AntApp>
-          <AuthGate>
-            <Dashboard />
-          </AuthGate>
-        </AntApp>
-      </StyleProvider>
-    </ConfigProvider>
+    <ThemeProvider locale={antdLocale} isDark={isDarkTheme} prefix="cj">
+      <VersionBanner />
+      <RateLimitBanner />
+      <AuthGate>
+        <Dashboard />
+      </AuthGate>
+    </ThemeProvider>
   );
 }
 

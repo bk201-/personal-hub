@@ -10,22 +10,22 @@
     "build": "vite build",
     "build:client": "tsc",
     "build:scripts": "tsc -p tsconfig.scripts.json",
-    "build:server": "tsc -p tsconfig.server.json",
+    "build:server": "node ../../scripts/buildServer.mjs",
     "start": "node dist/server/index.js",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --tsconfig tsconfig.server.json src/server/db/migrate.ts",
+    "db:migrate": "tsx --tsconfig tsconfig.scripts.json scripts/migrate.ts",
     "media:cleanup": "tsx --tsconfig tsconfig.scripts.json scripts/media-cleanup/cleanupMedia.ts",
     "tg:auth": "tsx --tsconfig tsconfig.server.json scripts/tg-auth.ts",
-    "tg:auth:deploy": "tsx --tsconfig tsconfig.server.json scripts/tg-auth-deploy.ts",
     "auth:create-user": "tsx --tsconfig tsconfig.server.json scripts/create-user.ts",
-    "lint": "oxlint --quiet",
-    "lint:fix": "oxlint --fix",
-    "format": "oxfmt",
-    "format:check": "oxfmt --check",
+    "lint": "oxlint --quiet --config ../../.oxlintrc.jsonc",
+    "lint:fix": "oxlint --fix --config ../../.oxlintrc.jsonc",
+    "format": "oxfmt --config ../../.oxfmtrc.json",
+    "format:check": "oxfmt --check --config ../../.oxfmtrc.json",
     "preview": "vite preview",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "checkup": "npm run build && npm run build:server && npm run format && npm run lint"
+    "checkup": "npm run typecheck && npm run test && npm run lint && npm run format:check",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit && tsc -p tsconfig.scripts.json"
   },
   "dependencies": {
     "@ant-design/icons": "^6.2.3",
@@ -65,7 +65,9 @@
     "telegram": "^2.26.22",
     "turndown": "^7.2.4",
     "zod": "^4.4.3",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.13",
+    "@personal-hub/auth-server": "*",
+    "@personal-hub/browser": "*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",

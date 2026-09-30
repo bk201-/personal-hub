@@ -32,6 +32,7 @@ function makeChannel(id: number, groupId: number | null, sortOrder: number): Cha
     sortOrder,
     groupId,
     isUnavailable: 0,
+    filterForwards: 0,
     unreadCount: 0,
     totalNewsCount: 0,
     createdAt: 1700000000,

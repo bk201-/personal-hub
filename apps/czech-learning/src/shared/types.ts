@@ -27,47 +27,46 @@ export type WordNumber = 'singular' | 'plural'; // singularia/pluralia tantum
 
 // Noun declension paradigms (14 classes; named after the model noun)
 export type WordDeclensionClass =
-  | 'pan'      // m.an.: pán  — sg. gen. pána
-  | 'muz'      // m.an.: muž  — sg. gen. muže
-  | 'soudce'   // m.an.: soudce (soft -ce)
+  | 'pan' // m.an.: pán  — sg. gen. pána
+  | 'muz' // m.an.: muž  — sg. gen. muže
+  | 'soudce' // m.an.: soudce (soft -ce)
   | 'predseda' // m.an.: předseda (borrowed -a stem)
-  | 'hrad'     // m.in.: hrad — sg. gen. hradu
-  | 'stroj'    // m.in.: stroj — sg. gen. stroje
-  | 'zena'     // f.: žena — sg. gen. ženy
-  | 'ruze'     // f.: růže — sg. gen. růže
-  | 'pisen'    // f.: píseň — sg. gen. písně
-  | 'kost'     // f.: kost — sg. gen. kosti
-  | 'mesto'    // n.: město — sg. gen. města
-  | 'more'     // n.: moře — sg. gen. moře
-  | 'kure'     // n.: kuře — sg. gen. kuřete
+  | 'hrad' // m.in.: hrad — sg. gen. hradu
+  | 'stroj' // m.in.: stroj — sg. gen. stroje
+  | 'zena' // f.: žena — sg. gen. ženy
+  | 'ruze' // f.: růže — sg. gen. růže
+  | 'pisen' // f.: píseň — sg. gen. písně
+  | 'kost' // f.: kost — sg. gen. kosti
+  | 'mesto' // n.: město — sg. gen. města
+  | 'more' // n.: moře — sg. gen. moře
+  | 'kure' // n.: kuře — sg. gen. kuřete
   | 'staveni'; // n.: stavení — sg. gen. stavení (indecl. -í)
 
 // Verb conjugation classes (by ending of 3rd-person sg. present)
 export type WordConjugationClass =
-  | 'I-nese'    // nese, bere — thematic -e (consonant stem)
-  | 'I-bere'    // bere subtype
-  | 'I-maze'    // maže subtype (alternation ž/ž)
-  | 'I-pece'    // peče subtype (k/č alternation)
+  | 'I-nese' // nese, bere — thematic -e (consonant stem)
+  | 'I-bere' // bere subtype
+  | 'I-maze' // maže subtype (alternation ž/ž)
+  | 'I-pece' // peče subtype (k/č alternation)
   | 'II-tiskne' // tiskne — suffix -ne
   | 'III-kryje' // kryje — suffix -je (non-productive)
-  | 'III-kupuje'// kupuje — suffix -uje (productive -ovat)
-  | 'IV-prosi'  // prosí — suffix -í (2nd soft)
-  | 'IV-trpi'   // trpí — suffix -í (2nd hard)
-  | 'IV-sazi'   // sází — suffix -í (2nd sibilant)
-  | 'V-dela';   // dělá — suffix -á (1st)
-
+  | 'III-kupuje' // kupuje — suffix -uje (productive -ovat)
+  | 'IV-prosi' // prosí — suffix -í (2nd soft)
+  | 'IV-trpi' // trpí — suffix -í (2nd hard)
+  | 'IV-sazi' // sází — suffix -í (2nd sibilant)
+  | 'V-dela'; // dělá — suffix -á (1st)
 
 export interface Word {
   id: number;
   czech: string;
   russian: string;
   pos: WordPos | null;
-  gender: WordGender | null;                        // noun only
-  numberType: WordNumber | null;                    // noun only (pluralia/singularia tantum)
-  declensionClass: WordDeclensionClass | null;      // noun only
-  aspect: WordAspect | null;                        // verb only
-  verbPair: string | null;                          // verb only (paired perfective/imperfective)
-  conjugationClass: WordConjugationClass | null;    // verb only
+  gender: WordGender | null; // noun only
+  numberType: WordNumber | null; // noun only (pluralia/singularia tantum)
+  declensionClass: WordDeclensionClass | null; // noun only
+  aspect: WordAspect | null; // verb only
+  verbPair: string | null; // verb only (paired perfective/imperfective)
+  conjugationClass: WordConjugationClass | null; // verb only
   notes: string | null;
   lesson: number | null;
   source: WordSource | null;
@@ -138,4 +137,3 @@ export interface UserSettings {
   modes: CardMode[];
   updatedAt: number;
 }
-

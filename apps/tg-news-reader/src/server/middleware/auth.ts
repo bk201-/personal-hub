@@ -1,22 +1,20 @@
+import { createAuthMiddleware } from '@personal-hub/auth-server';
+import type { AuthEnv, AuthPayload } from '@personal-hub/auth-server';
 import { eq } from 'drizzle-orm';
-import type { MiddlewareHandler } from 'hono';
+import type { Context } from 'hono';
 import { getCookie } from 'hono/cookie';
 import { verify } from 'hono/jwt';
 import { JWT_SECRET } from '../config.js';
 import { db } from '../db/index.js';
 import { sessions } from '../db/schema.js';
+import { authCookies } from './authCookies.js';
 
-export interface AuthPayload {
-  sub: string;
-  role: string;
-  sessionId: string;
-  exp: number;
-}
+export type { AuthPayload } from '@personal-hub/auth-server';
 
-async function authenticateMediaCookie(c: Parameters<MiddlewareHandler>[0]): Promise<boolean> {
+async function authenticateMediaCookie(c: Context<AuthEnv>): Promise<boolean> {
   if (c.req.method !== 'GET' || !c.req.path.startsWith('/api/media/')) return false;
 
-  const token = getCookie(c, 'media_token');
+  const token = getCookie(c, authCookies.media);
   if (!token) return false;
 
   try {
@@ -34,27 +32,4 @@ async function authenticateMediaCookie(c: Parameters<MiddlewareHandler>[0]): Pro
   }
 }
 
-export const authMiddleware: MiddlewareHandler = async (c, next) => {
-  const authHeader = c.req.header('Authorization');
-  // Also accept ?token= query param for browser-native requests (img/video/EventSource)
-  const queryToken = c.req.query('token');
-
-  const raw = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : queryToken;
-  if (!raw) {
-    if (await authenticateMediaCookie(c)) {
-      return next();
-    }
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-
-  const token = raw;
-  try {
-    const payload = (await verify(token, JWT_SECRET, 'HS256')) as unknown as AuthPayload;
-    c.set('userId', Number(payload.sub));
-    c.set('userRole', payload.role);
-    c.set('sessionId', payload.sessionId);
-    await next();
-  } catch {
-    return c.json({ error: 'Invalid or expired token' }, 401);
-  }
-};
+export const authMiddleware = createAuthMiddleware(JWT_SECRET, authenticateMediaCookie);

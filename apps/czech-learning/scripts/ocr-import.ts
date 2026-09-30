@@ -1,3 +1,5 @@
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'fs';
+import { basename, extname, resolve } from 'path';
 /**
  * OCR Import — processes dictionary images via Azure OpenAI GPT-4o Vision
  * and produces a structured JSON file ready for import.
@@ -15,8 +17,6 @@
  *   AZURE_OPENAI_DEPLOYMENT
  */
 import 'dotenv/config';
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs';
-import { resolve, extname, basename } from 'path';
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -186,7 +186,6 @@ Each entry must be a JSON object:
 
 Return ONLY a valid JSON array of these objects.`;
 
-
 // ─── Post-processing: split any remaining comma-merged entries ────────────────
 
 /** Infer gender for the second word in a pair from its ending */
@@ -233,7 +232,10 @@ function recoverMissingFeminine(entries: WordEntry[]): WordEntry[] {
       continue;
     }
 
-    const ruParts = entry.russian.split(/,\s+/).map(s => s.trim()).filter(Boolean);
+    const ruParts = entry.russian
+      .split(/,\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     if (ruParts.length < 2) {
       result.push(entry);
       continue;
@@ -254,8 +256,10 @@ function recoverMissingFeminine(entries: WordEntry[]): WordEntry[] {
     const cz = entry.czech;
     let femCzech: string | null = null;
 
-    if (/an$/i.test(cz))       femCzech = cz.replace(/an$/i, 'anka');     // Australan→Australanka
-    else if (/[aá]n$/i.test(cz)) femCzech = cz + 'ka';                    // Brit→Britka (Brit+ka)
+    if (/an$/i.test(cz))
+      femCzech = cz.replace(/an$/i, 'anka'); // Australan→Australanka
+    else if (/[aá]n$/i.test(cz))
+      femCzech = cz + 'ka'; // Brit→Britka (Brit+ka)
     else if (/[^aeiouáéíóúů]$/i.test(cz) && cz.length > 3) femCzech = cz + 'ka'; // fallback
 
     if (!femCzech) {
@@ -299,8 +303,14 @@ function splitCommaEntries(entries: WordEntry[]): WordEntry[] {
     }
 
     // Split czech parts: "Asiat, Asiatka" → ["Asiat", "Asiatka"]
-    const czechParts = entry.czech.split(/,\s+/).map((s) => s.trim()).filter(Boolean);
-    if (czechParts.length < 2) { result.push(entry); continue; }
+    const czechParts = entry.czech
+      .split(/,\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (czechParts.length < 2) {
+      result.push(entry);
+      continue;
+    }
 
     // Check if the second part looks like a 1st-person verb form — if so, don't split
     // Pattern: infinitive ends in -t/-ct, second part ends in -u/-m/-ím/-ím se etc.
@@ -315,7 +325,10 @@ function splitCommaEntries(entries: WordEntry[]): WordEntry[] {
     }
 
     // Split russian parts: "азиат, азиатка" → ["азиат", "азиатка"]
-    const russianParts = entry.russian.split(/,\s+/).map((s) => s.trim()).filter(Boolean);
+    const russianParts = entry.russian
+      .split(/,\s+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
 
     for (let i = 0; i < czechParts.length; i++) {
       const czechWord = czechParts[i];
@@ -325,14 +338,10 @@ function splitCommaEntries(entries: WordEntry[]): WordEntry[] {
 
       const russianWord = russianParts[i] ?? russianParts[russianParts.length - 1];
 
-      const gender = i === 0
-        ? entry.gender
-        : inferSecondGender(cleanCzech, entry.gender);
+      const gender = i === 0 ? entry.gender : inferSecondGender(cleanCzech, entry.gender);
 
-      const declension = i === 0
-        ? entry.declension_class
-        // @ts-ignore
-        : (inferDeclension(cleanCzech, gender) ?? entry.declension_class);
+      const declension =
+        i === 0 ? entry.declension_class : (inferDeclension(cleanCzech, gender ?? null) ?? entry.declension_class);
 
       // Notes: apply разг. to colloquial variants, otherwise keep original on first only
       let notes: string | null = null;
@@ -362,7 +371,12 @@ function splitCommaEntries(entries: WordEntry[]): WordEntry[] {
 
 function repairTruncatedJson(raw: string): string {
   // Already valid?
-  try { JSON.parse(raw); return raw; } catch { /* continue */ }
+  try {
+    JSON.parse(raw);
+    return raw;
+  } catch {
+    /* continue */
+  }
 
   // Find the last complete object: last occurrence of "}," or "}\n" before the truncation
   // Strategy: cut after the last well-formed "}" that closes a top-level array element
@@ -373,9 +387,18 @@ function repairTruncatedJson(raw: string): string {
 
   for (let i = 0; i < raw.length; i++) {
     const ch = raw[i];
-    if (escape) { escape = false; continue; }
-    if (ch === '\\' && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
+    if (escape) {
+      escape = false;
+      continue;
+    }
+    if (ch === '\\' && inString) {
+      escape = true;
+      continue;
+    }
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
     if (inString) continue;
     if (ch === '{' || ch === '[') depth++;
     if (ch === '}' || ch === ']') {
@@ -386,7 +409,10 @@ function repairTruncatedJson(raw: string): string {
 
   if (lastGood === -1) return '[]';
 
-  const trimmed = raw.slice(0, lastGood + 1).trimEnd().replace(/,$/, '');
+  const trimmed = raw
+    .slice(0, lastGood + 1)
+    .trimEnd()
+    .replace(/,$/, '');
   return trimmed + '\n]';
 }
 
@@ -408,7 +434,12 @@ interface WordEntry {
 
 async function processImage(imagePath: string): Promise<WordEntry[]> {
   const ext = extname(imagePath).toLowerCase().slice(1);
-  const mimeMap: Record<string, string> = { jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' };
+  const mimeMap: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+  };
   const mime = mimeMap[ext] ?? 'image/png';
   const base64 = readFileSync(imagePath).toString('base64');
   const dataUrl = `data:${mime};base64,${base64}`;
@@ -467,9 +498,10 @@ async function processImage(imagePath: string): Promise<WordEntry[]> {
     }
     return parsed as WordEntry[];
   } catch (e) {
-    const msg = e instanceof SyntaxError
-      ? `Failed to parse JSON: ${e.message}\nRaw: ${cleaned.slice(0, 500)}`
-      : (e as Error).message;
+    const msg =
+      e instanceof SyntaxError
+        ? `Failed to parse JSON: ${e.message}\nRaw: ${cleaned.slice(0, 500)}`
+        : (e as Error).message;
     throw new Error(msg);
   }
 }
@@ -506,11 +538,24 @@ for (let i = 0; i < imageFiles.length; i++) {
   }
 }
 
-console.log(`\n📊 Raw total: ${allWords.length} entries across ${imageFiles.length} pages (${pageErrors} page error(s))`);
+console.log(
+  `\n📊 Raw total: ${allWords.length} entries across ${imageFiles.length} pages (${pageErrors} page error(s))`,
+);
 
 // ─── Deduplicate + validate ───────────────────────────────────────────────────
 
-const VALID_POS = new Set(['noun', 'verb', 'adjective', 'adverb', 'pronoun', 'numeral', 'preposition', 'conjunction', 'interjection', 'phrase']);
+const VALID_POS = new Set([
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'pronoun',
+  'numeral',
+  'preposition',
+  'conjunction',
+  'interjection',
+  'phrase',
+]);
 const VALID_GENDER = new Set(['ma', 'mi', 'f', 'n']);
 const VALID_ASPECT = new Set(['perfective', 'imperfective']);
 const VALID_NUMBER = new Set(['singular', 'plural']);
@@ -524,8 +569,14 @@ for (const w of allWords) {
   const czech = w.czech?.trim();
   const russian = w.russian?.trim();
 
-  if (!czech || !russian) { invalidCount++; continue; }
-  if (seenCzech.has(czech.toLowerCase())) { dupeCount++; continue; }
+  if (!czech || !russian) {
+    invalidCount++;
+    continue;
+  }
+  if (seenCzech.has(czech.toLowerCase())) {
+    dupeCount++;
+    continue;
+  }
 
   seenCzech.add(czech.toLowerCase());
   finalWords.push({
@@ -553,4 +604,3 @@ console.log(`   Invalid entries    : ${invalidCount}`);
 console.log(`\n📄 Output: ${finalPath}`);
 console.log(`\nNext step:`);
 console.log(`   npm run import:words -- --email admin@example.com --password <pass>`);
-

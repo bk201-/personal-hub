@@ -4,7 +4,14 @@ const isDev = process.env.NODE_ENV !== 'production';
 
 export const corsMiddleware = cors({
   origin: isDev
-    ? ['http://localhost:5173', 'http://localhost:4173', 'http://localhost:3173']
+    ? [
+        'http://localhost:5173',
+        'http://localhost:4173',
+        'http://localhost:3173',
+        'http://127.0.0.1:5173',
+        'http://127.0.0.1:4173',
+        'http://127.0.0.1:3173',
+      ]
     : process.env.ALLOWED_ORIGIN
       ? [process.env.ALLOWED_ORIGIN]
       : [],

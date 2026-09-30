@@ -6,4 +6,3 @@ export type AppEnv = {
     sessionId: string;
   };
 };
-

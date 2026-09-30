@@ -28,18 +28,8 @@ export function registerMediaServiceWorker(): void {
   // Only activate in production — dev uses Vite HMR which can conflict with SW
   if (import.meta.env.DEV) return;
 
-  // When a new SW takes control (skipWaiting + clients.claim), reload the page
-  // so the user immediately gets the updated SW without stale behaviour.
-  let isFirstController = !navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (isFirstController) {
-      // First activation (no previous SW) — no reload needed
-      isFirstController = false;
-      return;
-    }
-    logger.info({ module: 'sw' }, 'new service worker activated, reloading');
-    window.location.reload();
-  });
+  // Media workers can take control without discarding the current page.
+  // Application updates are offered by VersionBanner; only the user reloads.
 
   window.addEventListener('load', () => {
     navigator.serviceWorker

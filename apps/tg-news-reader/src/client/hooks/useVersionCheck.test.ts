@@ -16,7 +16,7 @@ describe('useVersionCheck', () => {
   it('sets newVersionAvailable to true when the server version differs', async () => {
     fetcher.mockResolvedValue({
       ok: true,
-      json: async () => ({ version: '1.19.0' }),
+      json: async () => ({ buildId: '1.19.0' }),
     });
 
     const { result } = renderHook(() =>
@@ -33,7 +33,7 @@ describe('useVersionCheck', () => {
   it('keeps newVersionAvailable false when versions match', async () => {
     fetcher.mockResolvedValue({
       ok: true,
-      json: async () => ({ version: '1.18.0' }),
+      json: async () => ({ buildId: '1.18.0' }),
     });
 
     const { result } = renderHook(() =>
@@ -72,7 +72,7 @@ describe('useVersionCheck', () => {
 
     fetcher.mockResolvedValue({
       ok: true,
-      json: async () => ({ version: '1.19.0' }),
+      json: async () => ({ buildId: '1.19.0' }),
     });
 
     const { result } = renderHook(() =>
@@ -100,9 +100,9 @@ describe('useVersionCheck', () => {
 
   it('resets dismissed when a fresh mismatch is detected (was matching, now mismatching)', async () => {
     // First poll: versions match → no banner
-    fetcher.mockResolvedValueOnce({ ok: true, json: async () => ({ version: '1.18.0' }) });
+    fetcher.mockResolvedValueOnce({ ok: true, json: async () => ({ buildId: '1.18.0' }) });
     // Second poll: new version deployed → mismatch
-    fetcher.mockResolvedValueOnce({ ok: true, json: async () => ({ version: '1.19.0' }) });
+    fetcher.mockResolvedValueOnce({ ok: true, json: async () => ({ buildId: '1.19.0' }) });
 
     vi.useFakeTimers();
 
@@ -127,7 +127,7 @@ describe('useVersionCheck', () => {
     vi.useFakeTimers();
     const hiddenSpy = vi.spyOn(document, 'hidden', 'get').mockReturnValue(true);
 
-    fetcher.mockResolvedValue({ ok: true, json: async () => ({ version: '1.19.0' }) });
+    fetcher.mockResolvedValue({ ok: true, json: async () => ({ buildId: '1.19.0' }) });
 
     renderHook(() => useVersionCheck({ clientVersion: '1.18.0', intervalMs: 1_000, isDev: false, fetcher }));
 

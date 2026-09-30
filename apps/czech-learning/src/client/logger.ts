@@ -54,4 +54,3 @@ export const logger = {
   warn: (meta: Meta, msg: string) => emit('warn', meta, msg),
   error: (meta: Meta, msg: string) => emit('error', meta, msg),
 };
-

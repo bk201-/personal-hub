@@ -1,9 +1,17 @@
-import React, { useEffect } from 'react';
-import { Modal, Form, Input, Select, InputNumber, App, Divider } from 'antd';
+import type {
+  Word,
+  WordAspect,
+  WordConjugationClass,
+  WordDeclensionClass,
+  WordGender,
+  WordNumber,
+  WordPos,
+} from '@shared/types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { App, Divider, Form, Input, InputNumber, Modal, Select } from 'antd';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
-import type { Word, WordPos, WordGender, WordAspect, WordNumber, WordDeclensionClass, WordConjugationClass } from '@shared/types';
 
 type WordSource = 'textbook' | 'manual';
 
@@ -29,22 +37,46 @@ interface Props {
 }
 
 const POS_OPTIONS: WordPos[] = [
-  'noun', 'verb', 'adjective', 'adverb', 'pronoun',
-  'numeral', 'preposition', 'conjunction', 'interjection', 'phrase',
+  'noun',
+  'verb',
+  'adjective',
+  'adverb',
+  'pronoun',
+  'numeral',
+  'preposition',
+  'conjunction',
+  'interjection',
+  'phrase',
 ];
 
 const DECLENSION_VALUES: WordDeclensionClass[] = [
-  'pan', 'muz', 'soudce', 'predseda',
-  'hrad', 'stroj',
-  'zena', 'ruze', 'pisen', 'kost',
-  'mesto', 'more', 'kure', 'staveni',
+  'pan',
+  'muz',
+  'soudce',
+  'predseda',
+  'hrad',
+  'stroj',
+  'zena',
+  'ruze',
+  'pisen',
+  'kost',
+  'mesto',
+  'more',
+  'kure',
+  'staveni',
 ];
 
 const CONJUGATION_VALUES: WordConjugationClass[] = [
-  'I-nese', 'I-bere', 'I-maze', 'I-pece',
+  'I-nese',
+  'I-bere',
+  'I-maze',
+  'I-pece',
   'II-tiskne',
-  'III-kryje', 'III-kupuje',
-  'IV-prosi', 'IV-trpi', 'IV-sazi',
+  'III-kryje',
+  'III-kupuje',
+  'IV-prosi',
+  'IV-trpi',
+  'IV-sazi',
   'V-dela',
 ];
 
@@ -120,7 +152,7 @@ export function WordFormModal({ open, word, onClose }: Props) {
         numberType: values.pos === 'noun' ? (values.numberType ?? null) : null,
         declensionClass: values.pos === 'noun' ? (values.declensionClass ?? null) : null,
         aspect: values.pos === 'verb' ? (values.aspect ?? null) : null,
-        verbPair: values.pos === 'verb' ? (values.verbPair?.trim() || null) : null,
+        verbPair: values.pos === 'verb' ? values.verbPair?.trim() || null : null,
         conjugationClass: values.pos === 'verb' ? (values.conjugationClass ?? null) : null,
         notes: values.notes?.trim() || undefined,
       };
@@ -142,7 +174,6 @@ export function WordFormModal({ open, word, onClose }: Props) {
       width={500}
     >
       <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-
         {/* ─── Base fields ─────────────────────────────────────────────────── */}
         <Form.Item
           name="czech"
@@ -184,9 +215,15 @@ export function WordFormModal({ open, word, onClose }: Props) {
             </Form.Item>
 
             <Form.Item name="declensionClass" label={t('words.col_declension')}>
-              <Select allowClear placeholder="—" showSearch
-                filterOption={(input, opt) => (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
-                options={declensionOptions} />
+              <Select
+                allowClear
+                placeholder="—"
+                showSearch
+                filterOption={(input, opt) =>
+                  ((opt?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={declensionOptions}
+              />
             </Form.Item>
 
             <Form.Item name="numberType" label={t('words.col_number_type')}>
@@ -210,9 +247,15 @@ export function WordFormModal({ open, word, onClose }: Props) {
             </Form.Item>
 
             <Form.Item name="conjugationClass" label={t('words.col_conjugation')}>
-              <Select allowClear placeholder="—" showSearch
-                filterOption={(input, opt) => (opt?.label as string ?? '').toLowerCase().includes(input.toLowerCase())}
-                options={conjugationOptions} />
+              <Select
+                allowClear
+                placeholder="—"
+                showSearch
+                filterOption={(input, opt) =>
+                  ((opt?.label as string) ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                options={conjugationOptions}
+              />
             </Form.Item>
 
             <Form.Item name="verbPair" label={t('words.col_verb_pair')}>
@@ -238,7 +281,6 @@ export function WordFormModal({ open, word, onClose }: Props) {
             <Select.Option value="manual">{t('words.source_manual')}</Select.Option>
           </Select>
         </Form.Item>
-
       </Form>
     </Modal>
   );

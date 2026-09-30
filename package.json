@@ -1,0 +1,35 @@
+{
+  "name": "personal-hub",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace @personal-hub/auth-server --workspace @personal-hub/browser",
+    "dev": "npm run dev:news",
+    "dev:news": "npm run build:shared && npm run dev --workspace tg-news-reader",
+    "dev:czech": "npm run build:shared && npm run dev --workspace czech-learning",
+    "build": "npm run build:shared && npm run build --workspace tg-news-reader --workspace czech-learning",
+    "build:server": "npm run build:shared && npm run build:server --workspace tg-news-reader --workspace czech-learning",
+    "typecheck": "npm run build:shared && npm run typecheck --workspaces --if-present",
+    "test": "npm run build:shared && node scripts/test.mjs",
+    "lint": "oxlint --quiet",
+    "lint:fix": "oxlint --fix",
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "checkup": "npm run typecheck && npm run test && npm run lint && npm run format:check"
+  },
+  "devDependencies": {
+    "oxfmt": "^0.51.0",
+    "oxlint": "^1.66.0",
+    "oxlint-tsgolint": "^0.23.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.7"
+  }
+}

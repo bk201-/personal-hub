@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Modal, Input, Button, Alert, Flex, Spin, Typography } from 'antd';
+import { Alert, Button, Flex, Input, Modal, Spin, Typography } from 'antd';
 import { createStyles } from 'antd-style';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
@@ -126,4 +126,3 @@ export function TotpSetupModal({ open, onClose }: TotpSetupModalProps) {
     </Modal>
   );
 }
-

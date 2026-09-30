@@ -1,5 +1,6 @@
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import type { AuthEnv } from '@personal-hub/auth-server';
 import 'dotenv/config';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
@@ -83,7 +84,7 @@ process.on('SIGINT', () => void gracefulShutdown('SIGINT'));
 
 const isDev = process.env.NODE_ENV !== 'production';
 
-const app = new Hono();
+const app = new Hono<AuthEnv>();
 
 // ─── Access log (API only — static files are too noisy) ───────────────────────
 app.use('/api/*', async (c, next) => {
@@ -257,7 +258,7 @@ const port = parseInt(process.env.SERVER_PORT || '3173', 10);
 // Migration runs after serve() — during the ~3s migration window the health
 // endpoint already responds (SELECT 1 works before schema changes), so the
 // probe never sees "connection refused" and never fails.
-serve({ fetch: app.fetch, port });
+serve({ fetch: app.fetch, port, hostname: isDev ? '127.0.0.1' : '0.0.0.0' });
 const honoMs = Math.round(performance.now() - tModules);
 logger.info({ module: 'server', port, ms: honoMs }, `Hono listening on :${port} (setup ${honoMs}ms)`);
 

@@ -1,10 +1,10 @@
+import { and, count, desc, eq, like, or } from 'drizzle-orm';
 import { Hono } from 'hono';
+import type { WordPos } from '../../shared/types.js';
 import { db } from '../db/index.js';
 import { words } from '../db/schema.js';
-import { eq, like, or, and, count, desc } from 'drizzle-orm';
 import { logger } from '../logger.js';
 import type { AppEnv } from '../types.js';
-import type { WordPos } from '../../shared/types.js';
 
 const router = new Hono<AppEnv>();
 
@@ -12,7 +12,18 @@ type WordPatch = Partial<{
   czech: string;
   russian: string;
   english: string | null;
-  pos: 'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' | 'numeral' | 'preposition' | 'conjunction' | 'interjection' | 'phrase' | null;
+  pos:
+    | 'noun'
+    | 'verb'
+    | 'adjective'
+    | 'adverb'
+    | 'pronoun'
+    | 'numeral'
+    | 'preposition'
+    | 'conjunction'
+    | 'interjection'
+    | 'phrase'
+    | null;
   gender: 'ma' | 'mi' | 'f' | 'n' | null;
   numberType: 'singular' | 'plural' | null;
   declensionClass: string | null;
@@ -76,7 +87,18 @@ router.post('/', async (c) => {
   const body = await c.req.json<{
     czech: string;
     russian: string;
-    pos?: 'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' | 'numeral' | 'preposition' | 'conjunction' | 'interjection' | 'phrase' | null;
+    pos?:
+      | 'noun'
+      | 'verb'
+      | 'adjective'
+      | 'adverb'
+      | 'pronoun'
+      | 'numeral'
+      | 'preposition'
+      | 'conjunction'
+      | 'interjection'
+      | 'phrase'
+      | null;
     gender?: 'ma' | 'mi' | 'f' | 'n' | null;
     numberType?: 'singular' | 'plural' | null;
     declensionClass?: string | null;
@@ -127,7 +149,18 @@ router.patch('/:id', async (c) => {
   const body = await c.req.json<{
     czech?: string;
     russian?: string;
-    pos?: 'noun' | 'verb' | 'adjective' | 'adverb' | 'pronoun' | 'numeral' | 'preposition' | 'conjunction' | 'interjection' | 'phrase' | null;
+    pos?:
+      | 'noun'
+      | 'verb'
+      | 'adjective'
+      | 'adverb'
+      | 'pronoun'
+      | 'numeral'
+      | 'preposition'
+      | 'conjunction'
+      | 'interjection'
+      | 'phrase'
+      | null;
     gender?: 'ma' | 'mi' | 'f' | 'n' | null;
     numberType?: 'singular' | 'plural' | null;
     declensionClass?: string | null;
@@ -181,4 +214,3 @@ router.delete('/:id', async (c) => {
 });
 
 export default router;
-

@@ -1,17 +1,18 @@
-import 'dotenv/config';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import 'dotenv/config';
 import { Hono } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
-import authRouter from './routes/auth.js';
-import wordsRouter from './routes/words.js';
-import importRouter from './routes/import.js';
+import { client } from './db/index.js';
+import { runMigration } from './db/migrate.js';
+import { logger } from './logger.js';
 import { authMiddleware } from './middleware/auth.js';
 import { corsMiddleware } from './middleware/cors.js';
 import { rateLimitMiddleware } from './middleware/rateLimit.js';
-import { logger } from './logger.js';
-import { client } from './db/index.js';
-import { runMigration } from './db/migrate.js';
+import authRouter from './routes/auth.js';
+import importRouter from './routes/import.js';
+import versionRouter from './routes/version.js';
+import wordsRouter from './routes/words.js';
 import type { AppEnv } from './types.js';
 
 const isDev = process.env.NODE_ENV !== 'production';
@@ -45,25 +46,7 @@ if (!isDev) {
 
 // Auth routes (login/refresh/logout are public)
 app.route('/api/auth', authRouter);
-
-// Words CRUD (protected via global auth middleware below)
-app.route('/api/words', wordsRouter);
-
-// Import (admin-only batch insert)
-app.route('/api/import', importRouter);
-
-// Protect all other /api/* routes with JWT auth
-const PUBLIC_PATHS = new Set(['/api/health']);
-const PUBLIC_PREFIXES = ['/api/auth/'];
-
-app.use('/api/*', async (c, next) => {
-  const path = c.req.path;
-  if (PUBLIC_PATHS.has(path) || PUBLIC_PREFIXES.some((p) => path.startsWith(p))) {
-    return next();
-  }
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  return authMiddleware(c, next);
-});
+app.route('/api/version', versionRouter);
 
 // Health check
 app.get('/api/health', async (c) => {
@@ -83,6 +66,11 @@ app.get('/api/health', async (c) => {
   });
 });
 
+// Public routes are registered first; every remaining API route requires authentication.
+app.use('/api/*', authMiddleware);
+app.route('/api/words', wordsRouter);
+app.route('/api/import', importRouter);
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use('/*', async (c, next) => {
@@ -97,11 +85,10 @@ if (process.env.NODE_ENV === 'production') {
   app.get('*', serveStatic({ path: './dist/client/index.html' }));
 }
 
-const port = parseInt(process.env.SERVER_PORT ?? '3173', 10);
+const port = parseInt(process.env.SERVER_PORT ?? '3174', 10);
 
-serve({ fetch: app.fetch, port });
+serve({ fetch: app.fetch, port, hostname: isDev ? '127.0.0.1' : '0.0.0.0' });
 logger.info({ module: 'server', port }, `Hono listening on :${port}`);
 
 await runMigration();
 logger.info({ module: 'server' }, '✅ Ready');
-

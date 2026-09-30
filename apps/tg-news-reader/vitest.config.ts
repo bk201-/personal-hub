@@ -10,6 +10,7 @@ export default defineConfig({
     },
   },
   test: {
+    maxWorkers: 4,
     projects: [
       {
         test: {
