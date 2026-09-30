@@ -1,5 +1,11 @@
 # GitHub Repository Setup Checklist
 
+> INACTIVE ARCHIVE (2026-09-30): preserved from the standalone news repository.
+> This document and adjacent `workflows/` are historical reference only, outside
+> root `.github/workflows/`. None of the publishing, visibility, permissions or
+> deployment steps below apply to the private/local-only personal-hub repository.
+> Use the [root README](../../../../README.md) for current development instructions.
+
 After pushing this code to GitHub, complete the following one-time manual steps.
 
 ---

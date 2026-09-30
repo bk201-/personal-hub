@@ -1,5 +1,11 @@
 # TG News Reader — Azure Operations
 
+> INACTIVE ARCHIVE (2026-09-30): former standalone deployment reference, moved from
+> `apps/tg-news-reader/docs/azure.md`. Resource identifiers and commands below
+> describe historical infrastructure; their current existence was not verified.
+> They are not instructions to deploy or change infrastructure for personal-hub.
+> Use the [root README](../../../README.md) for current local setup.
+
 > Operational reference for Azure Container Apps. Updated when configuration changes.  
 > Resources: subscription `f7758f68-5127-4e40-b8bf-3bd367b448a9`, resource group `personal-apps-rg`, app `tg-news-reader`.
 

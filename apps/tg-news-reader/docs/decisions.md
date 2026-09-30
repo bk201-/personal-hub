@@ -2,6 +2,11 @@
 
 > Archive of architectural decisions and resolved bugs. Explains the _why_, not just the _what_.
 
+> Migration note (2026-09-30): these entries describe the standalone news app's
+> history, not new work or verified hosted resources in personal-hub. Paths remain
+> app-relative; databases and identities are now explicitly separate per workspace.
+> Shared auth implementation does not merge users or sessions.
+
 ---
 
 ## Architectural decisions
@@ -66,7 +71,7 @@ SQLite locally, Turso (libSQL) in production — via a single `@libsql/client`:
 
 ### TG_SESSION leaked in chat
 
-Session rotated via `npm run tg:auth`; old session terminated manually in Telegram → Settings → Active Sessions.
+Session rotated via the Telegram authentication script; old session terminated manually in Telegram → Settings → Active Sessions. The current root invocation is `npm run tg:auth --workspace tg-news-reader`.
 
 ---
 

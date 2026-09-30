@@ -1,6 +1,10 @@
 # TG News Reader — Architecture & Implementation Notes
 
-> Detailed notes on implemented features. For the living codebase architecture see `AGENTS.md`.
+> Inherited implementation notes; source paths are relative to `apps/tg-news-reader/`.
+> Read [app guidance](../AGENTS.md) for domain invariants and the
+> [root README](../../../README.md) for workspace boundaries and commands.
+> Deployment and hosted-monitoring sections below are historical, inactive reference.
+> Shared browser/auth mechanics now live in root `packages/`; app policy stays here.
 
 ---
 
@@ -260,14 +264,14 @@ Removing queued tasks also triggers a capacity recheck: the size of a deleted, o
 
 ### Orphan media maintenance
 
-Run from the application directory with the **matching database and mounted `data` volume**:
+Run from the repository root with the **news application's matching database and `data` directory**:
 
 ```powershell
 # Preview only; no media is deleted
-npm run media:cleanup
+npm run media:cleanup --workspace tg-news-reader
 
 # Stop ALL app replicas and other storage writers first
-npm run media:cleanup -- --apply --offline
+npm run media:cleanup --workspace tg-news-reader -- --apply --offline
 ```
 
 The standalone utility and its tests live in `scripts/media-cleanup`; it is not part of the running server
@@ -297,7 +301,7 @@ Do not run against production storage with an unrelated or empty database. Back 
 
 ---
 
-## 16. Azure deployment
+## 14. News view modes
 
 - `newsViewMode: 'list' | 'accordion'` in `uiStore` (persisted to localStorage)
 - `effectiveViewMode` in `NewsFeed` — forces accordion on mobile (`< 768px`)
@@ -315,7 +319,7 @@ Do not run against production storage with an unrelated or empty database. Back 
 
 ---
 
-## 16. Azure deployment
+## 16. Azure deployment (historical, inactive)
 
 ### Stack
 
@@ -331,7 +335,7 @@ Do not run against production storage with an unrelated or empty database. Back 
 - Scale: `minReplicas=0`, `maxReplicas=10`, **`cooldownPeriod=1800`** (30 min — updated 2026-03-28)
 - Base image: `node:22-bookworm-slim` (glibc — compatible with `@libsql/client` and `jsdom`)
 - Multi-stage Dockerfile: builder → runner (prodDeps only + `dist/`)
-- Full env vars reference: [docs/azure.md](azure.md)
+- Former deployment reference: [archived Azure operations](../../../docs/archive/tg-news-reader/azure.md). This is not the current local container configuration.
 
 ### Turso note
 
@@ -341,14 +345,14 @@ Do not run against production storage with an unrelated or empty database. Back 
 
 ## 17. Monitoring & fail detection
 
-### Azure Monitor Alerts (deployed in `personal-apps-rg`)
+### Azure Monitor Alerts (historically deployed in `personal-apps-rg`)
 
 | Rule                   | Trigger                | Window                          | Delay   |
 | ---------------------- | ---------------------- | ------------------------------- | ------- |
 | `tg-reader-error-logs` | KQL: `log.level >= 50` | 5 min                           | 1–5 min |
 | `tg-reader-restart`    | `RestartCount > 1`     | **15 min** (updated 2026-03-28) | 1–5 min |
 
-Recreate: `scripts/setup-monitoring.sh`. PowerShell: `az rest --body @file.json`.
+The former setup used the now-archived `docs/archive/tg-news-reader/scripts/setup-monitoring.sh` (root-relative) and `az rest`; recreating hosted monitoring is outside this repository's local-only workflow.
 
 ### alertBot
 

@@ -1,16 +1,18 @@
 # TG News Reader — Roadmap
 
 > Date: April 2026  
-> Living document — revisit when planning each step.  
-> Implementation details: [docs/architecture.md](docs/architecture.md) · Decisions & history: [docs/decisions.md](docs/decisions.md) · Azure ops: [docs/azure.md](docs/azure.md) · Git workflow: [CONTRIBUTING.md](CONTRIBUTING.md)
+> Inherited proposals — revisit against current code when planning each step.
+> Migrated into personal-hub on 2026-09-30; proposed status is unchanged. Azure
+> references describe the former standalone deployment, not current local setup.
+> Implementation details: [docs/architecture.md](docs/architecture.md) · Decisions & history: [docs/decisions.md](docs/decisions.md) · Archived Azure ops: [azure.md](../../docs/archive/tg-news-reader/azure.md) · Local checks: [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
 ## Technical Debt
 
-| #   | Task           | Description                                                                                                                                               | Complexity |
-| --- | -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| 1   | E2E smoke test | Login → select channel → fetch → read news → mark read. Stack: **Playwright**, runs against `npm run dev` with a test SQLite DB seeded with fixture data. | ⭐⭐⭐⭐   |
+| #   | Task           | Description                                                                                                                                                         | Complexity |
+| --- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1   | E2E smoke test | Login → select channel → fetch → read news → mark read. Stack: **Playwright**, runs against root `npm run dev:news` with a test SQLite DB seeded with fixture data. | ⭐⭐⭐⭐   |
 
 ---
 
@@ -224,7 +226,7 @@ images are a distinct visual segment (e.g. a divider / "from comments" badge in
    `downloadManager`, into a `comment_media` table (lazy, capped, cached).
 3. **Lightbox** — merge comment images into `useLightboxNav` flow with correct counters and an
    optional "from comments" segment marker.
-4. **Tests, i18n, version bump.**
+4. **Tests and i18n.** Version changes require an explicit request in personal-hub.
 
 ---
 

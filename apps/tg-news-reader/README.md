@@ -1,81 +1,39 @@
 # TG News Reader
 
-Personal full-stack Telegram news reader. Fetches posts from Telegram channels, stores them locally, and displays them in a clean web UI.
+Personal full-stack Telegram reader: fetch channel posts, store articles and media locally, and browse them in a React UI. This is the `tg-news-reader` workspace in [personal-hub](../../README.md), not a standalone installation.
 
-## Tech Stack
+## Stack and layout
 
-| Layer    | Technology                                          |
-| -------- | --------------------------------------------------- |
-| Backend  | Hono (Node.js), TypeScript                          |
-| Database | SQLite (local) / Turso (production) via Drizzle ORM |
-| Telegram | GramJS                                              |
-| Frontend | React 19, Ant Design 6, TanStack Query v5, Zustand  |
-| Deploy   | Azure Container Apps + Azure Container Registry     |
+- Hono on Node.js, Drizzle and libSQL/SQLite, GramJS.
+- React 19, Ant Design 6, TanStack Query and Zustand.
+- TypeScript 6, Vite 8, Oxlint, Oxfmt and Vitest.
+- `src/server/`: domain routes, database, Telegram services and download workers.
+- `src/client/`: reader UI, query hooks and domain stores.
+- `src/shared/`: app-specific types; `public/sw.js`: media service worker.
+- `scripts/`: local account, Telegram authentication and maintenance utilities.
+- Shared mechanics come from root `packages/browser` and `packages/auth-server`; news state and authorization policy remain here.
 
-## Quick Start
+## Local commands
 
-```bash
-# Install dependencies
-npm install
+From the **repository root**:
 
-# Authenticate with Telegram (run once)
-npm run tg:auth
-
-# Create a user account
-npm run auth:create-user -- your@email.com YourPassword123!
-
-# Apply DB migrations
-npm run db:migrate
-
-# Start dev server (backend on :3173, frontend on :5173)
-npm run dev
+```sh
+npm ci
+npm run db:migrate --workspace tg-news-reader
+npm run auth:create-user --workspace tg-news-reader
+npm run tg:auth --workspace tg-news-reader
+npm run dev:news
 ```
 
-## Key Commands
+Configure this app's local credentials separately before initialization; account/authentication scripts require deliberate user input or arguments. Telegram authentication contacts Telegram and writes local credentials. Do not reuse the Czech database or auth configuration.
 
-```bash
-npm run dev               # Start both server + client
-npm run build             # Vite client build
-npm run build:server      # TypeScript server type-check
-npm run lint              # ESLint
-npm run format            # Prettier (fix)
-npm run format:check      # Prettier (check only)
-npm run db:migrate        # Apply DB migrations
-npm run tg:auth           # Re-authenticate Telegram session
-```
+Client: `http://localhost:5173`; API: `http://localhost:3173`; Vite preview: `http://localhost:4173`. Preview requires a separate running API. Installation and lockfile management belong to the repository root.
 
 ## Documentation
 
-| File                                         | Contents                                            |
-| -------------------------------------------- | --------------------------------------------------- |
-| [AGENTS.md](AGENTS.md)                       | Architecture reference for AI agents and developers |
-| [CONTRIBUTING.md](CONTRIBUTING.md)           | Git workflow, PR process, pre-push checklist        |
-| [docs/architecture.md](docs/architecture.md) | Detailed implementation notes per feature           |
-| [docs/decisions.md](docs/decisions.md)       | Architectural decisions and resolved bug history    |
-| [docs/azure.md](docs/azure.md)               | Azure deployment, env vars, monitoring              |
-| [ROADMAP.md](ROADMAP.md)                     | Feature backlog and planning (in Russian)           |
-
-## Project Structure
-
-```
-src/
-  server/       # Hono API, Drizzle ORM, Telegram service, download workers
-  client/       # React app, components, TanStack Query hooks, Zustand stores
-  shared/       # Shared TypeScript types
-public/
-  sw.js         # Service Worker (media cache, production only)
-scripts/        # tg-auth.ts, create-user.ts
-```
-
-## Environment Variables
-
-Copy `.env.example` to `.env` and fill in the values. Full reference: [docs/azure.md](docs/azure.md).
-
-**Required for local dev:**
-
-```
-TG_API_ID=
-TG_API_HASH=
-TG_SESSION=        # written by npm run tg:auth
-JWT_SECRET=        # any random string
-```
+- [AGENTS](AGENTS.md): domain invariants and change guidance.
+- [CONTRIBUTING](CONTRIBUTING.md): local validation.
+- [Architecture](docs/architecture.md): detailed feature notes.
+- [Decisions](docs/decisions.md): rationale and historical fixes.
+- [ROADMAP](ROADMAP.md): proposals, not shipped-feature claims.
+- [Archived Azure operations](../../docs/archive/tg-news-reader/azure.md): inactive standalone deployment history.

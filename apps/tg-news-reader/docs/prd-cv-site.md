@@ -2,6 +2,10 @@
 
 > Date: April 2026
 
+> Historical proposal inherited from the news repository. This CV site is not one
+> of personal-hub's implemented workspaces. Hosted deployment, public publishing
+> and CI proposals below remain unimplemented intent, not active instructions.
+
 ## Problem Statement
 
 There is no personal landing page or CV site. When sharing a resume with potential employers or contacts, the only option is a static PDF file sent manually. There's no central place that:

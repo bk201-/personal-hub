@@ -2,6 +2,19 @@
 
 > PRD собран в ходе интервью 28.03.2026. Домен: `cj.dmitriishilov.com`.
 
+> Migration note (2026-09-30): moved from the standalone Czech repository's
+> `plans/czech-learning-app.md` to `personal-hub/plans/czech-learning/`.
+> This is historical product intent, not an audited implementation-status report.
+> Original phase descriptions and unchecked acceptance criteria are preserved.
+> Local commands and ports below are adapted to the workspace; architecture/tooling
+> proposals that differ from current code remain historical. Read the
+> [root README](../../README.md) and [Czech guidance](../../apps/czech-learning/AGENTS.md)
+> before implementation. App-relative `src/`, `scripts/` and `data/` paths below
+> mean `apps/czech-learning/`; API paths are unchanged.
+> Each app owns separate users, sessions and storage despite shared auth mechanics.
+> Phase 8's hosted domain, CI and deployment are historical proposals, inactive and
+> outside the current private/local-only scope.
+
 ---
 
 ## Архитектурные решения (константы для всех фаз)
@@ -9,10 +22,10 @@
 ### Стек
 | Слой | Технология |
 |---|---|
-| Backend | Hono (Node.js, ESM), порт `3173` |
+| Backend | Hono (Node.js, ESM), порт `3174` в workspace (исторически `3173`) |
 | ORM | Drizzle ORM + SQLite (локально) / Turso (прод) |
 | Frontend | React 19 + Ant Design 6 + antd-style + TanStack Query v5 + Zustand |
-| Сборка | Vite 6, TypeScript strict |
+| Сборка | Исторический план: Vite 6, TypeScript strict; текущая workspace-база: Vite 8, TypeScript 6 |
 | SRS | `ts-fsrs` |
 | AI / OCR | Azure OpenAI GPT-4o (одноразовый скрипт импорта) |
 | Auth | JWT (15 min access) + httpOnly refresh-cookie, invite-only |
@@ -157,12 +170,12 @@ Scaffold нового репозитория с Hono + Drizzle + React 19 + Ant 
 
 ### Acceptance criteria
 
-- [ ] `npm run dev` запускает сервер (3173) и Vite (5173)
-- [ ] `npm run auth:create-user` создаёт пользователя в SQLite
+- [ ] `npm run dev:czech` из корня запускает сервер (3174) и Vite (5174)
+- [ ] `npm run auth:create-user --workspace czech-learning` из корня создаёт пользователя в SQLite
 - [ ] `POST /api/auth/login` возвращает `accessToken` + httpOnly cookie
 - [ ] Неавторизованный запрос к `/api/words` возвращает 401
 - [ ] Авторизованный пользователь видит dashboard (даже пустой)
-- [ ] `npm run build && npm run build:server && npm run lint` — все три проходят
+- [ ] `npm run build --workspace czech-learning && npm run build:server --workspace czech-learning && npm run lint --workspace czech-learning` из корня — все три проходят
 
 ---
 
@@ -401,9 +414,11 @@ NODE_ENV=production
 
 ## Заметки по репозиторию
 
-- **Имя репозитория**: `czech-learning` (или `cj`)
-- Скопировать из tg-news-reader: `eslint.config.js`, `tsconfig*.json`, `vite.config.ts` (адаптировать), `Dockerfile` (адаптировать), `.github/workflows/` (адаптировать)
+> Workspace adaptation: the following notes retain the original setup intent where
+> useful; copying standalone tooling or deployment automation is superseded.
+
+- **Имя репозитория**: `personal-hub`; приложение `apps/czech-learning`, npm workspace `czech-learning` (историческое имя репозитория: `czech-learning` или `cj`)
+- Исторически предполагалось скопировать конфигурацию и workflow из tg-news-reader. Теперь общая база — TypeScript 6, Vite 8, Oxlint/Oxfmt; активные deployment workflow не переносятся.
 - **Не копировать**: `scripts/tg-auth.ts`, всё связанное с Telegram gramjs
 - Папка `data/` в `.gitignore`, но `data/grammar/` нужна пустой (`.gitkeep`)
-- `ts-fsrs` устанавливается как `npm install ts-fsrs`
-
+- При реализации SRS зависимость `ts-fsrs` добавляется из корня: `npm install ts-fsrs --workspace czech-learning` (это план, не утверждение об установленной зависимости).
