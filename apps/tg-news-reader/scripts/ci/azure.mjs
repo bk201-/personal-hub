@@ -3,7 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { pathToFileURL } from 'node:url';
 
 const IMAGE_REPOSITORY = 'tg-news-reader';
-const DATA_MOUNT = '/app/apps/tg-news-reader/data';
+const DATA_MOUNT = '/app/data';
 const SHA = /^[a-f0-9]{40}$/;
 const DIGEST = /^sha256:[a-f0-9]{64}$/;
 
@@ -61,7 +61,7 @@ export function validateApp(app, config) {
     (container.args?.length ?? 0) !== 0
   ) {
     throw new Error(
-      'Existing app is incompatible: require same news image, one container/replica, port 3173, persistent monorepo data mount and image-default command',
+      'Existing app is incompatible: require same news image, one container/replica, port 3173, persistent /app/data mount and image-default command',
     );
   }
   return container;

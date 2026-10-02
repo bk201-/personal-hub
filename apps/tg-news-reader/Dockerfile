@@ -28,7 +28,9 @@ RUN npm ci --omit=dev --workspace tg-news-reader --include-workspace-root=false 
 COPY --from=builder /app/packages/auth-server/dist packages/auth-server/dist
 COPY --from=builder /app/packages/browser/dist packages/browser/dist
 COPY --from=builder /app/apps/tg-news-reader/dist apps/tg-news-reader/dist
-WORKDIR /app/apps/tg-news-reader
-VOLUME /app/apps/tg-news-reader/data
+# Preserve npm's workspace resolution while exposing the original runtime entry point.
+COPY apps/tg-news-reader/package.json ./package.json
+RUN ln -s apps/tg-news-reader/dist dist
+VOLUME /app/data
 EXPOSE 3173
 CMD ["node", "--disable-warning=DEP0040", "dist/server/index.js"]
