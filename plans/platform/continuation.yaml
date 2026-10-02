@@ -2,7 +2,7 @@ title: personal-hub continuation plan
 updated: "2026-10-02"
 purpose: Continue repository work without access to the originating Scout conversation.
 path_convention: Repository-relative unless explicitly described as a sibling directory.
-status: Monorepo published; workflow migration is in progress and production cutover remains gated.
+status: Monorepo published; workflow migration PR has passed hosted CI and production cutover remains gated.
 
 decisions:
   - One repository, independently runnable applications; not a combined backend or deployment.
@@ -18,7 +18,7 @@ decisions:
 snapshot:
   observed: "2026-10-02"
   branch: dev/dshilov/monorepo-actions
-  head: 9cac36f
+  head: 142bcd2
   committed:
     - "8aa4248: news relocation with original main ancestry retained."
     - "aabf3ca: Czech current-worktree baseline, not its unborn repository index."
@@ -26,10 +26,11 @@ snapshot:
     - "db9a4b2: adapted documentation, plans, skills and inactive deployment archives."
     - "f01c0a2: monorepo snapshot including CV, music plans and tooling upgrades."
     - "9cac36f: restored PR skill and organized gitignore; published on main."
+    - "142bcd2: workspace CI, owner automation and gated news deployment; published in PR 2."
   history_note: Six unpublished migration commits were rewritten to GitHub noreply before first publication; original news ancestry was retained.
-  uncommitted:
-    - Workspace CI, guarded owner auto-merge and gated news deployment migration.
-    - Updated public-repository guidance and continuation state.
+  pending:
+    - Review and merge workflow migration PR 2; automatic owner merging remains disabled.
+    - Verify main CI, then explicitly enable desired owner automation and separately plan production cutover.
   interpretation: >-
     This is a dated handoff, not a live Git status report. Inspect the current
     branch and diff before changing anything. Existing uncommitted work is
@@ -40,7 +41,8 @@ github_repository:
   url: https://github.com/bk201-/personal-hub
   visibility: public
   local_remote: origin
-  state: main published and protected; native auto-merge enabled; twelve legacy Actions secrets copied.
+  state: main protected with required CI; native auto-merge enabled; twelve legacy Actions secrets copied.
+  workflow_pull_request: https://github.com/bk201-/personal-hub/pull/2
   source_settings: bk201-/tg-news-reader
   matched:
     - Merge methods, merge commit messages and merged-branch retention.
@@ -52,12 +54,12 @@ github_repository:
   intentional_differences:
     - The source repository is now private; personal-hub is public.
     - Protect main ruleset 24365619 requires PRs with zero approvals and resolved review threads, blocks deletion/force-push and has no bypass actors.
-    - Required CI is not yet configured; add Build & Lint only after its first successful run.
+    - Build & Lint is required from GitHub Actions app 15368, with strict up-to-date branches, after a successful hosted run.
     - Legacy Build Main remains enabled in the source repository; monorepo production activation remains off.
     - Secret scanning and push protection were enabled for the public monorepo on October 2.
   pending:
-    - Publish and validate monorepo CI, then require its Build & Lint aggregate.
-    - Enable owner PR automation only after required CI is enforced.
+    - Review and merge workflow PR 2, then verify CI on main.
+    - Enable AUTO_MERGE_OWNER_PRS only after main CI and the explicit downstream-dispatch path are accepted.
     - Confirm personal-account Copilot repository access; matching cloud-agent configuration does not prove access.
     - Perform a separately authorized news production cutover after disabling and draining the old deployment.
   guardrails:
@@ -154,9 +156,8 @@ suggested_next_work:
     - id: publication-decision
       state: main_published_workflow_migration_pending
       work:
-        - Review and publish the pending workflow migration through a feature PR when authorized.
-        - Complete a successful Linux CI run before enabling its required aggregate check.
-        - Enable owner auto-merge only after the CI gate is enforced.
+        - Review and merge workflow PR 2; the first hosted CI run and required aggregate are established.
+        - Verify CI on main before enabling owner automation.
         - Separately decide runtime hosting, releases, secrets and deployment activation.
       guardrail: Archived deployment workflows are historical reference, not runnable setup instructions.
 
@@ -182,9 +183,12 @@ workflow_migration_validation:
   completed:
     - Root app/shared builds, server builds, typechecks, tests and lint passed.
     - Both app Dockerfiles built from the root context; network-isolated disposable image smoke checks passed.
+    - 134 automation safety/contract tests passed, including cumulative deployment changes and retained pending queues.
+    - Hosted CI run 37019081969 passed all nine jobs for commit 142bcd2, including both Linux images and all workspaces.
   limitations:
     - Existing CV template formatting fails its full Astro formatting check; preserve imported templates outside the requested scope.
-    - Workflow changes still require publication and an actual GitHub CI run before enabling required checks or owner automation.
+    - The workflow PR remains open; main CI and actual owner-automation execution are not yet exercised.
+    - TG_NEWS_READER_DEPLOY_ENABLED and AUTO_MERGE_OWNER_PRS remain unset/off.
     - No production deployment, live Telegram smoke or Azure infrastructure change was performed.
 
 recovery:
