@@ -401,12 +401,27 @@ function azureFixture(options = {}) {
     { name: old, active: true, images: [`${image}:previous`] },
     { name: inactive, active: false, images: [`${image}@${digest}`] },
   ];
+  if (options.historyCount !== undefined) {
+    f.revisions.splice(
+      1,
+      1,
+      ...Array.from({ length: options.historyCount }, (_, index) => ({
+        name: `${config.app}--history-${index}`,
+        active: false,
+        images: [`${image}@${digest}`],
+        replicas: null,
+      })),
+    );
+  }
+  const oldNames = new Set(f.revisions.map((revision) => revision.name));
+  f.replicaReads = [];
   const polls = new Map();
   const zeroProof = new Set();
   const value = (args, flag) => args[args.indexOf(flag) + 1];
   const az = (args) => {
     f.calls.push(args);
     const command = args.slice(0, 3).join(' ');
+    options.onCommand?.(command, f, args);
     if (args[0] === 'acr' && args[1] !== 'list') {
       assert.equal(value(args, '--name'), 'testregistry', 'ACR requires resource name, not login hostname');
     }
@@ -423,7 +438,7 @@ function azureFixture(options = {}) {
     }
     if (command === 'containerapp revision list') {
       assert.ok(args.includes('--all'), 'Without --all Azure hides inactive revisions with terminating replicas');
-      return structuredClone(f.revisions);
+      return structuredClone(options.inventory ? options.inventory(f) : f.revisions);
     }
     if (command === 'containerapp revision set-mode') {
       f.mode = value(args, '--mode');
@@ -437,19 +452,28 @@ function azureFixture(options = {}) {
     }
     if (command === 'containerapp replica list') {
       const name = value(args, '--revision');
-      if (![old, inactive].includes(name)) return ['new-replica'];
-      if (options.drain === 'failure') throw new Error('Replica API failed');
-      if (options.drain === 'missing') return undefined;
+      f.replicaReads.push({ name, stopped: !f.revisions.find((revision) => revision.name === old)?.active });
       const count = (polls.get(name) ?? 0) + 1;
       polls.set(name, count);
-      if (options.drain === 'timeout' || count < 3) return ['terminating-replica'];
-      zeroProof.add(name);
-      f.events.push(`zero:${name}`);
-      return [];
+      let result;
+      if (options.replicas) result = options.replicas(name, count, f);
+      else if (!oldNames.has(name)) result = ['new-replica'];
+      else if (options.drain === 'failure') throw new Error('Replica API failed');
+      else if (options.drain === 'missing') result = undefined;
+      else if (options.drain === 'timeout' || ([old, inactive].includes(name) && count < 3)) {
+        result = ['terminating-replica'];
+      } else result = [];
+      if (result?.length === 0) {
+        zeroProof.add(name);
+        f.events.push(`zero:${name}`);
+      }
+      return result;
     }
     if (command === 'containerapp registry set') return;
     if (command === 'containerapp update --name') {
-      assert.deepEqual([...zeroProof].sort(), [old, inactive].sort(), 'Prove every old replica stopped BEFORE update');
+      for (const revision of f.revisions) {
+        assert.ok(zeroProof.has(revision.name), 'Prove every old replica stopped BEFORE update');
+      }
       assert.ok(
         f.revisions.every((r) => !r.active),
         'Never overlap active revisions',
@@ -470,7 +494,7 @@ function azureFixture(options = {}) {
     if (command === 'containerapp ingress traffic') {
       assert.equal(args[3], 'set');
       assert.equal(f.mode, 'Multiple', 'Azure traffic set must precede switching to Single');
-      assert.equal(value(args, '--revision-weight'), `${f.revisions.at(-1).name}=100`);
+      assert.equal(value(args, '--revision-weight'), `${f.revisions.find((revision) => revision.active).name}=100`);
       f.events.push('traffic');
       return;
     }
@@ -487,16 +511,243 @@ function azureFixture(options = {}) {
       return { status: 200, json: async () => health };
     },
   });
-  f.cutover = () =>
+  f.cutover = (attempt = '2') =>
     f.deployment.cutover({
       runId: '101',
-      attempt: '2',
+      attempt,
       mode: 'stop-before-start',
       username: 'fake-user',
       password: 'fake-password',
     });
   return f;
 }
+
+test('retained history is proved before stopping the singleton, with constant downtime replica reads', async () => {
+  const downtimeReads = [];
+  for (const historyCount of [100, 1]) {
+    const f = azureFixture({ historyCount });
+    await f.cutover();
+    const beforeStop = f.replicaReads.filter((read) => !read.stopped);
+    const duringStop = f.replicaReads.filter((read) => read.stopped);
+    assert.equal(beforeStop.length, historyCount, 'Every historical zero proof must precede deactivation');
+    assert.equal(new Set(beforeStop.map((read) => read.name)).size, historyCount);
+    assert.ok(beforeStop.every((read) => read.name.includes('--history-')));
+    assert.ok(duringStop.every((read) => !read.name.includes('--history-')));
+    downtimeReads.push(duringStop.length);
+    assert.equal(duringStop.length * 7_000, 28_000, 'Fake seven-second CLI reads must not scale with history');
+  }
+  assert.deepEqual(downtimeReads, [4, 4]);
+});
+
+test('historical inventory failures fail closed before any deactivation or update', async (t) => {
+  for (const source of ['revisions', 'cached revisions', 'replicas']) {
+    for (const failure of ['missing', 'null', 'error', 'invalid']) {
+      await t.test(`${source}: ${failure}`, async () => {
+        let inventories = 0;
+        const invalid = () => {
+          if (failure === 'error') throw new Error('Inventory API failed');
+          if (failure === 'missing') return undefined;
+          if (failure === 'null') return null;
+          return source === 'replicas' ? { replicas: 0 } : [];
+        };
+        const f = azureFixture({
+          historyCount: 100,
+          inventory: (state) =>
+            ++inventories >= (source === 'cached revisions' ? 4 : 3) && source !== 'replicas'
+              ? invalid()
+              : state.revisions,
+          replicas: source === 'replicas' ? () => invalid() : undefined,
+        });
+        await assert.rejects(f.cutover(), /inventory|Inventory API/);
+        assert.ok(!f.calls.some((args) => args[2] === 'deactivate' || args[1] === 'update'));
+        assert.equal(f.revisions[0].active, true);
+        assert.equal(f.smokeCalls, 0);
+        if (source === 'cached revisions') assert.equal(f.replicaReads.length, 100);
+      });
+    }
+  }
+});
+
+test('reactivated cached revisions block update or healthy completion on every later drain pass', async (t) => {
+  for (const stage of ['registry', 'post-start', 'Single']) {
+    for (const name of ['news-app--history-0', 'news-app--old']) {
+      await t.test(`${stage}: ${name}`, async () => {
+        let changed = false;
+        const f = azureFixture({
+          historyCount: 1,
+          onCommand: (command, state) => {
+            const ready =
+              stage === 'registry'
+                ? command === 'containerapp registry set'
+                : command === 'containerapp revision list' &&
+                  state.events.includes(stage === 'Single' ? 'mode:Single' : 'update');
+            if (!changed && ready) {
+              state.revisions.find((revision) => revision.name === name).active = true;
+              changed = true;
+            }
+          },
+        });
+        await assert.rejects(f.cutover(), /did not stop/);
+        assert.equal(changed, true);
+        assert.equal(f.calls.filter((args) => args[1] === 'update').length, stage === 'registry' ? 0 : 1);
+        assert.equal(f.smokeCalls, 0);
+        assert.equal(f.waits.length, 20, 'Two initial termination retries plus eighteen blocked drain retries');
+        assert.ok(!f.calls.some((args) => args[2] === 'activate'));
+      });
+    }
+  }
+});
+
+test('observed reactivation or changed revision image invalidates a historical zero proof', async (t) => {
+  for (const change of ['active', 'image']) {
+    await t.test(change, async () => {
+      let changed = false;
+      let inventories = 0;
+      const f = azureFixture({
+        historyCount: 1,
+        onCommand: (command, state) => {
+          if (command === 'containerapp registry set') {
+            const historical = state.revisions[1];
+            if (change === 'active') historical.active = true;
+            else historical.images = [`${image}:changed`];
+            changed = true;
+          }
+          if (changed && command === 'containerapp revision list' && ++inventories === 2) {
+            state.revisions[1].active = false;
+          }
+        },
+        replicas: (name, count, state) => {
+          if (state.revisions.find((revision) => revision.name === name).active) return ['running'];
+          if (name.includes('--history-') && count > 1 && count < 4) return ['terminating'];
+          return [];
+        },
+      });
+      await f.cutover();
+      assert.equal(f.replicaReads.filter((read) => read.name.includes('--history-')).length, 4);
+      assert.equal(f.waits.length, change === 'active' ? 3 : 2);
+      assert.ok(f.events.lastIndexOf('zero:news-app--history-0') < f.events.indexOf('update'));
+    });
+  }
+});
+
+test('disappearing revisions lose their proof, including the inventory immediately before deactivation', async (t) => {
+  for (const stage of ['before-stop', 'between-passes']) {
+    await t.test(stage, async () => {
+      let removed;
+      let absentInventories = 0;
+      const f = azureFixture({
+        historyCount: 1,
+        onCommand: (command, state, args) => {
+          if (
+            (stage === 'before-stop' && command === 'containerapp revision set-mode' && args.includes('Multiple')) ||
+            (stage === 'between-passes' && command === 'containerapp registry set')
+          ) {
+            removed = state.revisions.splice(1, 1)[0];
+          }
+          if (removed && command === 'containerapp revision list' && ++absentInventories === 2) {
+            state.revisions.push(removed);
+          }
+        },
+        replicas: (name, count, state) => {
+          if (state.revisions.find((revision) => revision.name === name).active) return ['running'];
+          return name.includes('--history-') && count === 2 ? ['terminating'] : [];
+        },
+      });
+      await f.cutover();
+      assert.equal(f.replicaReads.filter((read) => read.name.includes('--history-')).length, 3);
+      assert.equal(f.waits.length, 1);
+      assert.equal(f.smokeCalls, 1);
+      if (stage === 'before-stop') {
+        assert.ok(f.events.lastIndexOf('zero:news-app--history-0') < f.events.indexOf('update'));
+      }
+    });
+  }
+});
+
+test('new historical or active revisions between passes require actual zero replicas before update', async (t) => {
+  for (const stage of ['before-stop', 'registry']) {
+    for (const active of [false, true]) {
+      await t.test(`${stage}: active=${active}`, async () => {
+        const name = 'news-app--new-history';
+        let added = false;
+        let inventories = 0;
+        const f = azureFixture({
+          historyCount: 1,
+          onCommand: (command, state, args) => {
+            if (
+              (stage === 'before-stop' && command === 'containerapp revision set-mode' && args.includes('Multiple')) ||
+              (stage === 'registry' && command === 'containerapp registry set')
+            ) {
+              state.revisions.push({ name, active, replicas: 0, images: [`${image}:retained`] });
+              added = true;
+            }
+            if (added && command === 'containerapp revision list' && ++inventories === 2) {
+              state.revisions.find((revision) => revision.name === name).active = false;
+            }
+          },
+          replicas: (revision, count, state) => {
+            if (state.revisions.find((entry) => entry.name === revision).active) return ['running'];
+            return revision === name && count === 1 ? ['terminating'] : [];
+          },
+        });
+        await f.cutover();
+        assert.equal(f.replicaReads.filter((read) => read.name === name).length, 2);
+        assert.equal(f.waits.length, stage === 'registry' && active ? 2 : 1);
+        assert.ok(f.events.indexOf(`zero:${name}`) < f.events.indexOf('update'));
+      });
+    }
+  }
+});
+
+test('old active revision still requires bounded real drain after historical prewarming', async (t) => {
+  for (const failure of ['timeout', 'missing', 'error']) {
+    await t.test(failure, async () => {
+      const f = azureFixture({
+        historyCount: 100,
+        replicas: (name) => {
+          if (name.includes('--history-')) return [];
+          if (failure === 'error') throw new Error('Replica API failed');
+          return failure === 'missing' ? undefined : ['terminating'];
+        },
+      });
+      await assert.rejects(f.cutover(), /did not stop|replica inventory|Replica API/);
+      assert.equal(f.revisions[0].active, false);
+      assert.equal(f.replicaReads.filter((read) => !read.stopped).length, 100);
+      assert.equal(f.replicaReads.filter((read) => read.stopped).length, failure === 'timeout' ? 18 : 1);
+      assert.equal(f.waits.length, failure === 'timeout' ? 18 : 0);
+      assert.ok(!f.calls.some((args) => args[1] === 'update' || args[2] === 'activate'));
+    });
+  }
+});
+
+test('zero proofs never survive another cutover on the same deployment instance', async (t) => {
+  for (const failure of [false, true]) {
+    await t.test(failure ? 'second inventory fails' : 'second cutover succeeds', async () => {
+      let second = false;
+      const f = azureFixture({
+        historyCount: 1,
+        replicas: (name, _count, state) => {
+          if (second && failure && name.includes('--history-')) return undefined;
+          return state.revisions.find((revision) => revision.name === name).active ? ['running'] : [];
+        },
+      });
+      await f.cutover();
+      const firstNext = f.revisions.at(-1);
+      const calls = f.calls.length;
+      second = true;
+      if (failure) {
+        await assert.rejects(f.cutover('3'), /replica inventory/);
+        assert.equal(firstNext.active, true);
+        assert.ok(!f.calls.slice(calls).some((args) => args[2] === 'deactivate' || args[1] === 'update'));
+      } else {
+        await f.cutover('3');
+        assert.equal(firstNext.active, false);
+        assert.equal(f.smokeCalls, 2);
+      }
+      assert.equal(f.replicaReads.filter((read) => read.name.includes('--history-')).length, 2);
+    });
+  }
+});
 
 test('cutover polls active AND inactive old replicas, deploys digest, sets traffic before Single, then smokes', async () => {
   const f = azureFixture();

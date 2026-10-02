@@ -2,7 +2,7 @@ title: personal-hub continuation plan
 updated: "2026-10-02"
 purpose: Continue repository work without access to the originating Scout conversation.
 path_convention: Repository-relative unless explicitly described as a sibling directory.
-status: Workflow migration merged; legacy news container compatibility restored locally, awaiting publication.
+status: Production cutover and drain-fix publication authorized; recovery copies prepared and drain correction ready for protected-main publication.
 
 decisions:
   - One repository, independently runnable applications; not a combined backend or deployment.
@@ -17,8 +17,8 @@ decisions:
 
 snapshot:
   observed: "2026-10-02"
-  branch: dev/dshilov/news-container-compatibility
-  head: 9680a33
+  branch: dev/dshilov/news-drain-latency
+  head: f462998
   committed:
     - "8aa4248: news relocation with original main ancestry retained."
     - "aabf3ca: Czech current-worktree baseline, not its unborn repository index."
@@ -29,10 +29,11 @@ snapshot:
     - "142bcd2: workspace CI, owner automation and gated news deployment; published in PR 2."
     - "a42885f: PR 2 squash-merged after explicit approval; main CI passed."
     - "9680a33: dependency update merged separately; preserved as the compatibility change baseline."
+    - "f462998: PR 3 merged; legacy news runtime compatibility published and main CI passed."
   history_note: Six unpublished migration commits were rewritten to GitHub noreply before first publication; original news ancestry was retained.
   pending:
-    - Review the legacy news runtime compatibility change; owner automation and production remain disabled.
-    - Explicitly enable desired owner automation and separately plan production cutover.
+    - Review and publish the local drain correction before executing the authorized short-downtime production cutover.
+    - Publish the authorized drain correction before enabling production; owner automation remains separately disabled.
   interpretation: >-
     This is a dated handoff, not a live Git status report. Inspect the current
     branch and diff before changing anything. Existing uncommitted work is
@@ -60,14 +61,65 @@ github_repository:
     - Legacy Build Main remains enabled in the source repository; monorepo production activation remains off.
     - Secret scanning and push protection were enabled for the public monorepo on October 2.
   pending:
-    - Review and publish the news runtime compatibility change before production activation.
     - Main CI has passed; enable AUTO_MERGE_OWNER_PRS only when the explicit downstream-dispatch path is accepted.
     - Confirm personal-account Copilot repository access; matching cloud-agent configuration does not prove access.
-    - Perform a separately authorized news production cutover after disabling and draining the old deployment.
+    - Complete the authorized news cutover after resolving the recorded preflight blockers, then disable and drain the old deployment.
   guardrails:
     - The twelve source secrets were copied through a destination-encrypted handoff; no values were exposed or token permissions expanded.
     - The temporary transfer branch/artifact were deleted and its workflow disabled; source main and runtime were not changed.
     - Keep production deployment off until explicit cutover authorization; secret presence is not deployment permission.
+
+production_cutover:
+  observed: "2026-10-02"
+  authorization: User approved the singleton cutover, then explicitly approved correcting the drain algorithm through commit, push, PR and merge before continuing.
+  state: Paused before source workflow disablement or production activation.
+  environment:
+    name: tg-news-reader-production
+    id: 23311119030
+    required_reviewer: bk201-
+    branch_policy: Only the main branch; no tag policy.
+    admin_bypass: false
+    self_review: Allowed for the single-owner repository; no deployment approval submitted.
+  azure:
+    subscription: f7758f68-5127-4e40-b8bf-3bd367b448a9
+    resource_group: personal-apps-rg
+    app: tg-news-reader
+    active_revision: tg-news-reader--rdc977a55
+    retained_revisions: 101
+    runtime: One healthy replica, Single mode, min=max=1, external port 3173, image-default command, Azure Files at /app/data.
+    health: Database OK; Telegram session not expired and connection not delayed.
+  recovery:
+    image: personalapps-hpebd4enbyftf4c2.azurecr.io/tg-news-reader:dc977a5538269498817b977e8993e2f4c8694cf5
+    digest: sha256:fded7a166c6296aa003f310188113a3d6e824fc6c0d04e79ffc49c3ecedbad27
+    database: Remote Turso, not SQLite on the mounted share.
+    schema_compatibility: schema.ts, migrate.ts and downloadsMigration.ts have identical Git blobs in the running commit and f462998.
+    database_backup:
+      method: Read-only embedded-replica sync, closed remote connection, then SQLite backup from the local replica.
+      storage_account: tgnewsreadermedia
+      private_blob_container: tg-news-reader-recovery
+      blob: pre-monorepo-2026-10-02T15-43-28.687Z.sqlite
+      sha256: b1f91d66f878a18716747a11ff3d398cb4395078eb919f595d8d5040cc7c15f9
+      validation: Downloaded the stored copy, matched its SHA256 and opened it offline; PRAGMA integrity_check returned ok.
+      privacy: No database contents or credentials logged; temporary local copies removed; no Telegram client or application server started.
+      limitation: This is a pre-cutover recovery copy, not PITR or a transactional snapshot spanning both Turso and media. No live restore was performed.
+    media_snapshot:
+      account: tgnewsreadermedia
+      share: tgr-media
+      timestamp: "2026-10-02T15:32:26.0000000Z"
+      state: Created and confirmed present; retained privately in Azure, not downloaded.
+    rollback_rule: Stop and prove all new replicas drained before reactivating the retained old revision; never overlap Telegram clients.
+  drain_correction:
+    original_finding: azure.mjs sequentially queried actual replicas for every retained revision during each drain pass, including multiple passes after stopping production.
+    measurement: A read-only historical replica lookup took 7.3 seconds locally, or 4 seconds with CLI telemetry disabled.
+    implementation: Prove inactive historical revisions have zero actual replicas before stopping; reuse cutover-local proofs only while full inventories confirm unchanged inactive identities.
+    invalidation: Activity, disappearance or changed image invalidates proof; new revisions require actual replica reads; proof does not survive another cutover call.
+    regression: 101-revision fixture proves all historical reads precede deactivation and normal downtime replica reads remain constant; 174 automation tests passed.
+    limitation: Hosted downtime remains unmeasured; API delays and readiness still affect the outage duration.
+    next: Publish the authorized correction through protected main and verify main CI before cutover.
+  unchanged:
+    - Source Build Main 249856757 remains active; latest observed run 36148766366 completed successfully.
+    - TG_NEWS_READER_DEPLOY_ENABLED, TG_NEWS_READER_CUTOVER_MODE and AUTO_MERGE_OWNER_PRS remain unset.
+    - No revision stopped/started, image deployed, session changed or application data restored.
 
 applications:
   news:
@@ -86,7 +138,7 @@ applications:
       data_mount: /app/data
       port: 3173
       local_validation: Image rebuilt; network-isolated checks passed for static/version/shared imports and retained SQLite/media in a disposable /app/data volume.
-    remaining: Representative container/runtime acceptance and separately authorized production cutover.
+    remaining: Resolve recorded cutover blockers, then execute the authorized singleton production switch.
   czech:
     directory: apps/czech-learning
     state: Early prototype, not a mature product whose entire UI must be preserved.
@@ -163,11 +215,11 @@ suggested_next_work:
         - Exercise representative app workflows using isolated configuration/data before production activation.
       done_when: Actual Linux containers run independently; Windows layout checks alone are insufficient.
     - id: publication-decision
-      state: workflows_merged_runtime_compatibility_local
+      state: workflows_and_runtime_compatibility_merged
       work:
         - Workflow PR 2 is merged and main CI has passed; required aggregate protection is enforced.
-        - Publish reviewed compatibility changes through another PR before production cutover.
-        - Separately decide runtime hosting, releases, secrets and deployment activation.
+        - Runtime compatibility PR 3 is merged; main CI run 37025261293 passed.
+        - News production cutover is authorized but paused at the documented preflight blockers; other apps remain independent.
       guardrail: Archived deployment workflows are historical reference, not runnable setup instructions.
 
 historical_validation:

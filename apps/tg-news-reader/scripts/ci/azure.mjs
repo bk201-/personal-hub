@@ -102,7 +102,7 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
   const target = ['--name', config.app, '--resource-group', config.group];
   const revisionTarget = (name) => ['--revision', name, '--resource-group', config.group];
   const revisionQuery = '[].{name:name,active:properties.active,images:properties.template.containers[].image}';
-  function revisions() {
+  function revisions(zeroProof) {
     const list = az(['containerapp', 'revision', 'list', ...target, '--all'], revisionQuery);
     if (
       !Array.isArray(list) ||
@@ -117,6 +117,12 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
       )
     ) {
       throw new Error('Cannot verify existing revision inventory');
+    }
+    if (zeroProof) {
+      const inactive = new Map(list.filter((entry) => !entry.active).map((entry) => [entry.name, entry.images[0]]));
+      for (const [name, image] of zeroProof) {
+        if (inactive.get(name) !== image) zeroProof.delete(name);
+      }
     }
     return list;
   }
@@ -146,13 +152,19 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
     }
     return { app, container, registryName: registry() };
   }
-  async function waitForDrain(except) {
+  async function waitForDrain(zeroProof, except, warming = false) {
     for (let attempt = 0; attempt < 18; attempt++) {
       let drained = true;
-      for (const revision of revisions().filter((entry) => entry.name !== except)) {
+      for (const revision of revisions(zeroProof).filter((entry) => entry.name !== except)) {
+        if (revision.active) {
+          if (!warming) drained = false;
+          continue;
+        }
+        if (zeroProof.has(revision.name)) continue;
         // Missing replica counts are NOT evidence of a stopped container. Ask
         // for the actual replica list, including inactive/terminating revisions.
-        if (revision.active || replicas(revision.name).length !== 0) drained = false;
+        if (replicas(revision.name).length !== 0) drained = false;
+        else zeroProof.set(revision.name, revision.images[0]);
       }
       if (drained) return;
       await wait(10_000);
@@ -174,13 +186,18 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
     const next = `${config.app}--${suffix}`;
     if (revisions().some((revision) => revision.name === next)) throw new Error('Revision name already exists');
 
+    // Prove retained history before downtime. Reuse only within this cutover,
+    // invalidating proofs on every full inventory when identity/state changes.
+    const zeroProof = new Map();
+    await waitForDrain(zeroProof, undefined, true);
+
     // Single mode rolls and can overlap Telegram clients. Switch to Multiple
     // ONLY to allow deactivation of the last revision, then wait BEFORE update.
     az(['containerapp', 'revision', 'set-mode', ...target, '--mode', 'Multiple']);
-    for (const revision of revisions()) {
+    for (const revision of revisions(zeroProof)) {
       if (revision.active) az(['containerapp', 'revision', 'deactivate', ...revisionTarget(revision.name)]);
     }
-    await waitForDrain();
+    await waitForDrain(zeroProof);
     az([
       'containerapp',
       'registry',
@@ -193,7 +210,7 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
       '--password',
       password,
     ]);
-    await waitForDrain();
+    await waitForDrain(zeroProof);
     az([
       'containerapp',
       'update',
@@ -207,7 +224,7 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
     ]);
 
     // Post-start drain is a verification, not the session-overlap guarantee.
-    await waitForDrain(next);
+    await waitForDrain(zeroProof, next);
     let healthy = false;
     for (let index = 0; index < 18; index++) {
       const revision = az(
@@ -232,7 +249,7 @@ export function createDeployment(config, { az = azureCli, wait = sleep, fetcher 
     // already the sole running revision; switch back to Single afterwards.
     az(['containerapp', 'ingress', 'traffic', 'set', ...target, '--revision-weight', `${next}=100`]);
     az(['containerapp', 'revision', 'set-mode', ...target, '--mode', 'Single']);
-    await waitForDrain(next);
+    await waitForDrain(zeroProof, next);
     for (let index = 0; index < 18; index++) {
       try {
         const response = await fetcher(`https://${app.fqdn}/api/health`, {
