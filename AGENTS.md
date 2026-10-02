@@ -1,6 +1,6 @@
 # personal-hub
 
-Private, local-only npm workspace repository. Leave work available for local review; do not stage, commit, publish, push, open remote issues/PRs, or deploy automatically. Preserve app names and versions unless explicitly asked to change them. Treat `docs/archive/` as inactive historical material, not operational instructions.
+Public GitHub repository with private npm workspaces. Leave changes available for local review unless the user authorizes committing or publishing them. Published changes go through a `dev/dshilov/*` branch and a PR to protected `main`. Production deployment and cutover require separate authorization. Preserve app names and versions unless explicitly asked to change them. Treat `docs/archive/` as inactive historical material, not operational instructions.
 
 ## Continuing work
 
@@ -18,7 +18,13 @@ When resuming the project, choosing next work, or revisiting migration/product d
 
 ## Working locally
 
-- Install with `npm ci` at the root only; use workspace-scoped scripts for focused changes. TypeScript 6, Oxlint and Oxfmt are the shared tooling baseline; React apps use Vite 8, while the CV site retains Astro and its compatible Vite. Use the CV workspace's `format:astro` script for `.astro` templates, which Oxfmt does not format.
+- Install with `npm ci` at the root only; use workspace-scoped scripts for focused changes. React apps and shared packages use TypeScript 7; root/CV retain TypeScript 6 for Astro's compiler API compatibility. Use the CV workspace's `format:astro` script for `.astro` templates, which Oxfmt does not format.
 - Validate the affected workspaces and shared-package consumers with existing scripts. Report checks actually run and remaining failures; a build is not a substitute for tests.
 - Keep credentials, `.env` contents, tokens and application data out of patches, logs and prompts. Use disposable test data rather than live databases.
 - Keep new documentation and code comments in English; preserve the original language and unchecked status of historical plans. A plan is not evidence that a feature exists.
+
+## GitHub automation
+
+- Workflows live in root `.github/workflows`; app-specific build and deployment inputs stay with their app. Read the root README's GitHub automation section before changing triggers, merge gates or deployment.
+- Keep PR validation independent of production secrets. A shared-package change must validate its consumers. Preserve the stable aggregate check name `Build & Lint`.
+- News production activation requires disabling and draining the old repository's deployment first. Czech and CV do not inherit news infrastructure, credentials or deployment policies.

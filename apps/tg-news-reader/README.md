@@ -6,7 +6,7 @@ Personal full-stack Telegram reader: fetch channel posts, store articles and med
 
 - Hono on Node.js, Drizzle and libSQL/SQLite, GramJS.
 - React 19, Ant Design 6, TanStack Query and Zustand.
-- TypeScript 6, Vite 8, Oxlint, Oxfmt and Vitest.
+- TypeScript 7, Vite 8, Oxlint, Oxfmt and Vitest.
 - `src/server/`: domain routes, database, Telegram services and download workers.
 - `src/client/`: reader UI, query hooks and domain stores.
 - `src/shared/`: app-specific types; `public/sw.js`: media service worker.
@@ -36,4 +36,5 @@ Client: `http://localhost:5173`; API: `http://localhost:3173`; Vite preview: `ht
 - [Architecture](docs/architecture.md): detailed feature notes.
 - [Decisions](docs/decisions.md): rationale and historical fixes.
 - [ROADMAP](ROADMAP.md): proposals, not shipped-feature claims.
+- [GitHub automation](../../README.md#github-automation): monorepo CI, protected-main rollout and gated news deployment.
 - [Archived Azure operations](../../docs/archive/tg-news-reader/azure.md): inactive standalone deployment history.

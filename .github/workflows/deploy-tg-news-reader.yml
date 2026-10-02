@@ -1,0 +1,266 @@
+name: Deploy TG News Reader
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force_news_deploy:
+        description: Explicitly redeploy verified current main even if news is already up to date
+        type: boolean
+        default: false
+
+# Activation is an operator decision, NOT part of the migration. Configure the
+# tg-news-reader-production environment with required reviewers and a main-only branch policy.
+# Disable source workflow 249856757 and finish/cancel all its outstanding runs
+# separately. The read-only handoff guard never disables or cancels anything.
+# Also set TG_NEWS_READER_CUTOVER_MODE=stop-before-start after approving downtime,
+# checking the existing app's persistent mount, port and singleton scale settings.
+# Preflight requires port 3173, min=max=1, one container using the image command,
+# and existing Azure Files mounted at /app/apps/tg-news-reader/data. This workflow
+# does not create storage, move data or change sessions/environment variables.
+permissions: {}
+
+concurrency:
+  group: tg-news-reader-production
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    if: >-
+      github.repository == 'bk201-/personal-hub' &&
+      vars.TG_NEWS_READER_DEPLOY_ENABLED == 'true' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+       (github.event_name == 'workflow_run' &&
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main' &&
+        github.event.workflow_run.head_repository.full_name == github.repository &&
+        (github.event.workflow_run.event == 'push' || github.event.workflow_run.event == 'workflow_dispatch')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      deployments: read
+    outputs:
+      sha: ${{ steps.ci.outputs.sha }}
+      run-id: ${{ steps.ci.outputs.run-id }}
+      run-attempt: ${{ steps.ci.outputs.run-attempt }}
+      relevant: ${{ steps.paths.outputs.relevant }}
+    steps:
+      # This bootstrap runs before ANY checkout. No PR code or artifacts are used.
+      - name: Verify current main has successful trusted CI
+        id: ci
+        uses: actions/github-script@373c709c69115d41ff229c7e5df9f8788daa9553 # v9
+        with:
+          script: |
+            const repo = context.repo;
+            const fullName = `${repo.owner}/${repo.repo}`;
+            if (fullName !== 'bk201-/personal-hub') throw new Error('Unexpected repository');
+            const {data: main} = await github.rest.repos.getBranch({...repo, branch: 'main'});
+            const sha = main.commit.sha;
+            if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error('Invalid main SHA');
+            const workflows = await github.paginate(github.rest.actions.listRepoWorkflows, {...repo, per_page: 100});
+            const matches = workflows.filter(w => w.name === 'CI' && w.state === 'active' && /^\.github\/workflows\/[^/]+\.ya?ml$/.test(w.path));
+            if (matches.length !== 1) throw new Error('Expected exactly one active root CI workflow');
+            const {data: runs} = await github.rest.actions.listWorkflowRuns({
+              ...repo, workflow_id: matches[0].id, branch: 'main', head_sha: sha, per_page: 100
+            });
+            const candidates = runs.workflow_runs.filter(r =>
+              ['push', 'workflow_dispatch'].includes(r.event) &&
+              r.repository?.full_name === fullName && r.head_repository?.full_name === fullName
+            ).sort((a, b) => b.id - a.id);
+            const latest = candidates[0];
+            if (!latest) throw new Error('No trusted CI run for current main');
+            let id;
+            if (context.eventName === 'workflow_dispatch') {
+              if (context.ref !== 'refs/heads/main' || context.sha !== sha) throw new Error('Manual dispatch is not current main');
+              id = latest.id;
+            } else if (context.eventName === 'workflow_run') {
+              const trigger = context.payload.workflow_run;
+              if (trigger?.id !== latest.id || trigger.head_sha !== sha ||
+                  trigger.head_branch !== 'main' || trigger.head_repository?.full_name !== fullName ||
+                  !['push', 'workflow_dispatch'].includes(trigger.event) ||
+                  trigger.conclusion !== 'success' || trigger.run_attempt !== latest.run_attempt) {
+                throw new Error('Stale or untrusted CI event');
+              }
+              id = trigger.id;
+            } else {
+              throw new Error('Unsupported trigger');
+            }
+            const {data: run} = await github.rest.actions.getWorkflowRun({...repo, run_id: id});
+            if (run.workflow_id !== matches[0].id || run.name !== 'CI' ||
+                run.repository?.full_name !== fullName || run.head_repository?.full_name !== fullName ||
+                run.head_branch !== 'main' || run.head_sha !== sha ||
+                !['push', 'workflow_dispatch'].includes(run.event) ||
+                run.status !== 'completed' || run.conclusion !== 'success' ||
+                run.run_attempt !== latest.run_attempt) {
+              throw new Error('CI is not a successful trusted main run');
+            }
+            core.setOutput('sha', sha);
+            core.setOutput('run-id', String(run.id));
+            core.setOutput('run-attempt', String(run.run_attempt));
+
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ steps.ci.outputs.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+
+      - name: Check cumulative changes since the last successful news deployment
+        id: paths
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node apps/tg-news-reader/scripts/ci/paths.mjs
+
+      - name: Validate deployment safety contracts
+        run: node --test apps/tg-news-reader/scripts/ci/deployment.test.mjs
+
+  deploy:
+    needs: qualify
+    # Relevance includes pending news changes even when unrelated app merges
+    # overtake a previous CI run. Manual recovery can redeploy an unchanged SHA.
+    if: >-
+      vars.TG_NEWS_READER_DEPLOY_ENABLED == 'true' &&
+      (needs.qualify.outputs.relevant == 'true' ||
+       (github.event_name == 'workflow_dispatch' && inputs.force_news_deploy == true))
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: tg-news-reader-production
+    permissions:
+      contents: read
+      actions: read
+    env:
+      DEPLOY_SHA: ${{ needs.qualify.outputs.sha }}
+      CI_RUN_ID: ${{ needs.qualify.outputs.run-id }}
+      CI_RUN_ATTEMPT: ${{ needs.qualify.outputs.run-attempt }}
+      CUTOVER_MODE: ${{ vars.TG_NEWS_READER_CUTOVER_MODE }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.qualify.outputs.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+
+      - name: Verify source handoff and recheck CI (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_PAT: ${{ secrets.PAT_TOKEN }}
+        run: node apps/tg-news-reader/scripts/ci/guard.mjs
+
+      - name: Log in to Azure
+        uses: azure/login@935127ca5bb3c4b02c9c2c10060028383878f33f # v3
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Read-only existing infrastructure compatibility check
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          AZURE_CONTAINER_APP: ${{ secrets.AZURE_CONTAINER_APP }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: node apps/tg-news-reader/scripts/ci/azure.mjs preflight
+
+      - name: Build tested SHA with the monorepo root context
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+        run: |
+          set -euo pipefail
+          docker build --file apps/tg-news-reader/Dockerfile --tag "$ACR_LOGIN_SERVER/tg-news-reader:$DEPLOY_SHA" .
+
+      # Building can take a while. Fail closed again immediately before writes.
+      # PAT_TOKEN exists ONLY in these read-only source guard invocations.
+      - name: Recheck source handoff and current CI before registry writes (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_PAT: ${{ secrets.PAT_TOKEN }}
+        run: node apps/tg-news-reader/scripts/ci/guard.mjs
+
+      - name: Log in to ACR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Push image and export image-only backup
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+        run: |
+          set -euo pipefail
+          docker push "$ACR_LOGIN_SERVER/tg-news-reader:$DEPLOY_SHA"
+          docker save "$ACR_LOGIN_SERVER/tg-news-reader:$DEPLOY_SHA" | gzip > tg-news-reader-image.tar.gz
+
+      # This is an image archive, not a database/session backup. In this public
+      # repository it is downloadable by readers; never include runtime data.
+      - name: Upload news image backup before cutover
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: tg-news-reader-image-${{ env.DEPLOY_SHA }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: tg-news-reader-image.tar.gz
+          retention-days: 90
+          compression-level: 0
+          if-no-files-found: error
+
+      - name: Recheck source handoff and current CI before cutover (read-only)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_PAT: ${{ secrets.PAT_TOKEN }}
+        run: node apps/tg-news-reader/scripts/ci/guard.mjs
+
+      # No canary, second app/session, automatic rollback or rolling overlap.
+      # On failure/cancellation, inspect revisions before any operator recovery;
+      # the old revision is never automatically restarted beside the new one.
+      - name: Stop old revisions, prove drain, deploy and smoke test
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          ACR_USERNAME: ${{ secrets.ACR_USERNAME }}
+          ACR_PASSWORD: ${{ secrets.ACR_PASSWORD }}
+          AZURE_CONTAINER_APP: ${{ secrets.AZURE_CONTAINER_APP }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: node apps/tg-news-reader/scripts/ci/azure.mjs cutover
+
+      - name: Bounded news-only image retention
+        env:
+          ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
+          AZURE_CONTAINER_APP: ${{ secrets.AZURE_CONTAINER_APP }}
+          AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP }}
+        run: node apps/tg-news-reader/scripts/ci/azure.mjs cleanup
+
+      - name: Optional alert explicitly skipped
+        if: failure()
+        run: echo "Telegram alert skipped; ALERT_BOT_TOKEN and ALERT_CHAT_ID are not configured. Use the Actions failure notification."
+
+      - name: Remove local image archive
+        if: always()
+        run: rm -f -- tg-news-reader-image.tar.gz
+
+  retain-backups:
+    needs: [qualify, deploy]
+    if: vars.TG_NEWS_READER_DEPLOY_ENABLED == 'true' && needs.deploy.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.qualify.outputs.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+      - name: Keep three news backups, deleting at most twenty per run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node apps/tg-news-reader/scripts/ci/artifacts.mjs
