@@ -1,0 +1,80 @@
+title: Music discovery implementation slices
+status: proposed_not_started
+prd: prd.yaml
+app_directory: apps/music-discovery
+current_scaffold:
+  - App directory placeholder only; no package.json or runnable workspace.
+  - No new runtime code, dependency changes, provider calls or deployment.
+
+slices:
+  - id: provider-feasibility
+    title: Confirm real provider access
+    depends_on: []
+    work:
+      - Select sample communities/posts with the user.
+      - Verify permitted VK wall access with actual credentials and representative pagination.
+      - Verify Spotify album search and target-market availability.
+      - Record redacted outcomes, limitations and a go/no-go decision.
+    done_when:
+      - Both required discovery paths work, or the blocking provider limitation is explicit.
+      - Missing/restricted audio metadata has a text-only or unresolved-result path.
+    stop_if: Required API access is unavailable; do not replace it with scraping.
+
+  - id: first-release-discovery
+    title: One source post to one useful result
+    depends_on: [provider-feasibility]
+    work:
+      - Create the app workspace using the existing platform where appropriate.
+      - Own provider configuration, schema and migrations within this app.
+      - Fetch a bounded sample from one community and persist source identity/text/link.
+      - Extract artist/album and perform a Spotify lookup.
+      - Render a matched album link or explicit unresolved VK fallback.
+      - Keep HTTP credentials in server-owned configuration.
+    done_when:
+      - A real sample travels through the full path without manual database editing.
+      - Matched, ambiguous, not-found and provider-error results remain distinguishable.
+
+  - id: source-management-and-refresh
+    title: Flat source list and safe incremental refresh
+    depends_on: [first-release-discovery]
+    work:
+      - Add/remove communities with supported identifier normalization.
+      - Implement bounded first import and incremental per-community fetching.
+      - Deduplicate posts and persist progress only after successful data writes.
+      - Prevent overlapping refresh jobs from corrupting checkpoints.
+      - Surface per-source errors, throttling and retry behavior.
+    done_when:
+      - Repeated/overlapping pages and pinned posts do not create duplicates or skip posts.
+      - A failure in one community does not erase another community's progress.
+      - Interrupted work can be retried using persisted progress.
+
+  - id: reading-and-browsing
+    title: Useful music inbox
+    depends_on: [source-management-and-refresh]
+    work:
+      - Implement agreed viewed/read behavior independently of fetch checkpoints.
+      - Add list/tile presentation and explicit source/album date labels.
+      - Add agreed style/date filters with an unknown-style path.
+      - Resolve duplicate-album presentation and optional manual matching decisions.
+    done_when:
+      - Refresh does not silently consume unread results.
+      - Navigation preserves VK provenance and does not promise autoplay.
+      - Missing artwork, dates or styles do not prevent browsing.
+
+  - id: local-readiness
+    title: Independent local operation
+    depends_on: [reading-and-browsing]
+    work:
+      - Exercise ingestion and matching interfaces with redacted fixtures and failure cases.
+      - Add regression coverage using existing repository tooling.
+      - Define separate local ports, cookies, credentials and disposable database setup.
+      - Document local configuration and remaining provider limitations.
+    done_when:
+      - Refresh, retry, read state and fallback behavior satisfy the PRD acceptance criteria.
+      - Other personal-hub apps are unaffected.
+      - No live provider credentials are needed for automated tests.
+
+deferred:
+  - Publication, cloud infrastructure and deployment.
+  - Automatic playback and Spotify user authorization for playback control.
+  - Scheduled refresh, alternate sources and generalized provider plugins.

@@ -7,7 +7,7 @@ export function stringArrayToDriver(value: string[]): string {
 
 /** Deserialize a JSON TEXT (or already-parsed array) back to string[]. */
 export function stringArrayFromDriver(value: string): string[] {
-  return typeof value === 'string' ? (JSON.parse(value) as string[]) : (value as unknown as string[]);
+  return typeof value === 'string' ? (JSON.parse(value) as string[]) : value;
 }
 
 /** Serialize a number[] to JSON TEXT for SQLite. */
@@ -17,7 +17,7 @@ export function numberArrayToDriver(value: number[]): string {
 
 /** Deserialize a JSON TEXT (or already-parsed array) back to number[]. */
 export function numberArrayFromDriver(value: string): number[] {
-  return typeof value === 'string' ? (JSON.parse(value) as number[]) : (value as unknown as number[]);
+  return typeof value === 'string' ? (JSON.parse(value) as number[]) : value;
 }
 
 /**

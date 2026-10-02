@@ -1,0 +1,196 @@
+title: personal-hub continuation plan
+updated: "2026-10-01"
+purpose: Continue repository work without access to the originating Scout conversation.
+path_convention: Repository-relative unless explicitly described as a sibling directory.
+status: Local monorepo established; local acceptance and product work remain.
+
+decisions:
+  - One repository, independently runnable applications; not a combined backend or deployment.
+  - Keep npm workspaces and one root lockfile; add orchestration tooling only for a demonstrated need.
+  - Share reusable behavior, not product schemas or every similarly named file.
+  - Shared authentication implementation does not mean shared users, sessions, databases or SSO.
+  - Keep the original repositories untouched as reference and recovery sources.
+  - A private GitHub repository is configured; commits, pushes and deployment still require separate authorization.
+  - Use dev/dshilov/* for working branches.
+  - Current source code and scripts are authoritative; historical plans describe intent, not completion.
+
+snapshot:
+  observed: "2026-10-01"
+  branch: dev/dshilov/monorepo-bootstrap
+  head: 74e3f59
+  committed:
+    - "8304fad: news relocation with original main ancestry retained."
+    - "5568f2f: Czech current-worktree baseline, not its unborn repository index."
+    - "dc63f19: isolated workspaces and shared browser/auth modules."
+    - "74e3f59: adapted documentation, plans, skills and inactive deployment archives."
+  uncommitted:
+    - CV workspace import, relocated plans/assets and archived deployment workflow.
+    - Workspace lock/config/scripts, Docker manifest-copy and documentation changes for the CV import.
+    - Music-discovery plans and app-directory placeholder.
+    - This continuation plan and its documentation links.
+  interpretation: >-
+    This is a dated handoff, not a live Git status report. Inspect the current
+    branch and diff before changing anything. Existing uncommitted work is
+    intentional; preserve it rather than recreating imports or cleaning it away.
+
+github_repository:
+  configured: "2026-10-01"
+  url: https://github.com/bk201-/personal-hub
+  visibility: private
+  local_remote: origin
+  state: Empty repository; no commits or branches pushed.
+  source_settings: bk201-/tg-news-reader
+  matched:
+    - Merge methods, merge commit messages and merged-branch retention.
+    - Issues, projects, wiki and discussions disabled.
+    - Actions enabled with read-only default token permissions and no PR review approval permission.
+    - Dependabot vulnerability alerts and security updates enabled.
+    - Source dependency labels added; the new default accessibility label retained.
+    - Cloud-agent validation tools, firewall and workflow-approval settings match the source defaults.
+  intentional_differences:
+    - The source repository is public; this repository remains private.
+    - Auto-merge remains disabled, and no CI or deployment workflows have been published.
+    - Source Dependabot security updates were paused; the new repository reports them unpaused.
+  blockers:
+    - GitHub rejected private-repository ruleset creation with HTTP 403 requiring GitHub Pro.
+    - GitHub rejected repository secret scanning and push protection with HTTP 422 as unavailable.
+  pending:
+    - Publish adapted agent instructions and skills only with an explicitly authorized push.
+    - Adapt PR CI for the monorepo before requiring its Build & Lint status check.
+    - Confirm personal-account Copilot repository access; matching cloud-agent configuration does not prove access.
+    - Resolve private-repository feature availability before claiming protection parity with the source.
+  guardrails:
+    - No secrets were copied and the source repository was not modified.
+    - Do not change visibility, purchase a plan or enable deployment to work around feature restrictions.
+
+applications:
+  news:
+    directory: apps/tg-news-reader
+    state: Main working product; migrated to shared browser and authentication modules.
+    priority: Primary reference for functional regression and local acceptance.
+    entry_points:
+      - apps/tg-news-reader/AGENTS.md
+      - apps/tg-news-reader/README.md
+      - apps/tg-news-reader/ROADMAP.md
+    remaining: Live local Telegram operation and acceptance on representative copied data.
+  czech:
+    directory: apps/czech-learning
+    state: Early prototype, not a mature product whose entire UI must be preserved.
+    user_clarification: >-
+      On 2026-09-30 the user clarified that little data exists and most work
+      concerned word recognition. Significant redesign or a fresh application
+      is under consideration, not yet a decision to delete or rewrite it.
+    preserve: Useful OCR/import work, source examples and recognized vocabulary.
+    approach: >-
+      Leave the imported prototype available. Clarify the intended learning
+      workflow before investing in old UI polish or a rewrite. Reuse the
+      platform where appropriate; do not migrate users/data just for parity.
+    historical_plan: plans/czech-learning/czech-learning-app.md
+  cv:
+    directory: apps/dmitriishilov.com
+    state: Existing unpublished Astro/Alpine/Tailwind site imported with current local changes.
+    approach: Keep independent of React UI and shared authentication.
+    entry_points:
+      - apps/dmitriishilov.com/README.md
+      - plans/dmitriishilov.com/prd-cv-site.md
+      - plans/dmitriishilov.com/cv-site.md
+    remaining: Visual/mobile/print review; existing PDF was copied, not regenerated.
+  music:
+    directory: apps/music-discovery
+    state: Plans-only placeholder; no package.json, runtime, dependencies or provider calls.
+    naming: music-discovery is a working name.
+    entry_points:
+      - plans/music-discovery/prd.yaml
+      - plans/music-discovery/implementation.yaml
+    remaining: Confirm actual VK and Spotify API access before implementing ingestion.
+    distinction: Opening a Spotify album is not a guarantee of automatic playback.
+
+suggested_next_work:
+  interpretation: >-
+    These are continuation options, not authorization to run every step.
+    Follow the user's selected task and resolve its prerequisites first.
+  items:
+    - id: news-local-acceptance
+      state: pending
+      work:
+        - Review the current diff and news setup instructions.
+        - Agree whether to use an empty local database or an isolated copy of existing data.
+        - If copying data, use a consistent database snapshot; migrate only the copy.
+        - Configure a separate local Telegram session when the user is ready to authenticate.
+        - Exercise channels, reading state, media, login/refresh and the update banner.
+      guardrails:
+        - Never point the new application at the original or production database by default.
+        - Never reuse the active production TG_SESSION in a second running client.
+        - Keep secrets out of repository files, logs and chat transcripts.
+      done_when: Representative news workflows work locally without changing the old installation.
+    - id: cv-visual-acceptance
+      state: pending
+      work:
+        - Start the CV workspace using its documented local command.
+        - Review desktop/mobile appearance, links and print layout.
+        - Regenerate the PDF only as an explicit task; preserve the existing artifact otherwise.
+      done_when: User accepts the site and print output or concrete follow-up issues are recorded.
+    - id: music-provider-feasibility
+      state: awaiting_sources_and_credentials
+      plan: plans/music-discovery/implementation.yaml
+      first_slice: provider-feasibility
+      done_when: Real permitted access works for representative sources, or a blocker is documented.
+    - id: czech-product-direction
+      state: awaiting_product_decision
+      work:
+        - Review existing recognition/import results and a few representative examples.
+        - Agree the first useful end-to-end learning workflow.
+        - Choose targeted reuse versus rebuilding the product UI/domain implementation.
+      done_when: A scoped next slice is agreed without assuming the historical plan is still desired.
+    - id: container-acceptance
+      state: pending
+      work:
+        - Confirm downloading the missing base image is acceptable; no image publication is needed.
+        - Build and run the two existing application Dockerfiles with isolated configuration/data.
+      done_when: Actual Linux containers run independently; Windows layout checks alone are insufficient.
+    - id: publication-decision
+      state: remote_configured_publication_deferred
+      work:
+        - Review and commit pending imports only when requested.
+        - Authorize the first push separately; the private GitHub repository and origin already exist.
+        - Resolve the GitHub protection blockers and adapt monorepo CI before enabling required checks.
+        - Separately decide runtime hosting, releases, secrets and deployment activation.
+      guardrail: Archived deployment workflows are historical reference, not runnable setup instructions.
+
+historical_validation:
+  date: "2026-09-30"
+  meaning: Recorded migration results, not a claim that today's working tree has been revalidated.
+  completed:
+    - News/Czech/shared builds and typechecks, with 1410 passing tests before the CV import.
+    - Isolated local auth/version/database smoke tests without a live Telegram connection.
+    - CV check/build, all-app build/typecheck, root lint/format and local HTTP routes after import.
+    - Clean install and scoped production dependency layouts using isolated offline fixtures.
+    - Original source status/index/ref/file invariants and preserved histories.
+  limitations:
+    - Docker images were not built or executed; the Node base image was not cached.
+    - Live Telegram/download end-to-end behavior was not exercised.
+    - CV visual/print review and PDF regeneration were not performed.
+    - VK/Spotify feasibility was not tested; no credentials were configured.
+    - An in-place clean install encountered a Windows lock on an Oxfmt DLL; an isolated clean install passed.
+    - Scoped production installs retained optional Vite/tsx/TypeScript peers; do not claim all build tooling is absent.
+
+recovery:
+  sibling_original_repositories:
+    - tg-news-reader
+    - czech-learning
+    - dmitriishilov.com
+  sibling_backup_directory: personal-hub-backup-20260930
+  news_history: 198 original main commits retained with original IDs; all-ref bundle in backup.
+  czech_history: No original commits; raw worktree/index snapshots preserve the pre-import state.
+  cv_history: 10 original commits retained under refs/archive/dmitriishilov.com/heads/main and in a verified bundle.
+  cv_backup_subdirectory: cv-import
+  portability: >-
+    Sibling originals/backups and archive refs are local recovery aids, not
+    runtime dependencies. Do not assume a later clone includes them.
+
+continuation:
+  - Read the relevant application guidance and linked plan for the user's chosen task.
+  - Inspect current Git state and package scripts instead of repeating migration setup.
+  - Update this handoff when a decision, remaining milestone or known limitation materially changes.
+  - Keep product requirements in their linked plans; do not duplicate them here.
+  - No Scout tools, chat history or session-local files are required to continue.

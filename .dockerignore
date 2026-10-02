@@ -13,6 +13,7 @@
 **/*.session
 **/.idea
 **/.cache
+**/.astro
 **/*.log
 .local-validation
 docs/archive

@@ -109,7 +109,7 @@ describe('useTtsStatus', () => {
 
   it('does not fetch when hash is null', () => {
     const fetchMock = vi.fn();
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
     renderHook(() => useTtsStatus(null), { wrapper: wrap() });
     expect(fetchMock).not.toHaveBeenCalled();
   });

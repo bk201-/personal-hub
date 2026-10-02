@@ -1,0 +1,128 @@
+title: Music discovery from VK communities
+working_name: music-discovery
+status: draft
+created: "2026-09-30"
+implementation_status: plans_only
+app_directory: apps/music-discovery
+implementation_plan: implementation.yaml
+provenance:
+  session_title: VK API и интеграция музыки
+  session_id: 4e4c72a1-e2b1-4a81-afd8-8dae3ab3c35c
+  basis: User request in the source conversation; assistant suggestions are provisional.
+  limitation: Retrieved assistant replies are incomplete; API feasibility claims are not independently verified here.
+
+problem: >-
+  Discover music posted in selected public VK communities without browsing VK
+  or retrieving region-blocked audio. Find the corresponding albums on Spotify
+  and retain the original VK post when an unambiguous album match is unavailable.
+
+confirmed_requirements:
+  - Own application in personal-hub, not a feature inside tg-news-reader.
+  - Flat list of VK communities with add/remove; no community folders or groups.
+  - Read community posts through an API, not HTML page scraping.
+  - Refresh on demand across configured communities.
+  - Remember progress so previously fetched or viewed posts are not repeatedly presented as new.
+  - Extract music release information and search for corresponding Spotify albums.
+  - Present results as a list or tiles with sorting/filtering by date and musical style.
+  - Open the matched album in Spotify when the user selects it.
+  - Preserve the original VK link when there is no unambiguous Spotify match.
+
+proposed_mvp:
+  - Store posts separately from album candidates and Spotify matches.
+  - Distinguish ingestion progress from the user's viewed/read state.
+  - Show artist, album, source community, post date, match state and available style tags.
+  - Keep original VK links on every result, including matched albums.
+  - Display partial refresh failures per community without discarding successful results.
+  - Offer an explicit retry for failed lookups; do not label API errors as no match.
+  - Treat opening Spotify as navigation, not a promise of playback.
+  - Reuse existing authentication and browser modules only where they fit the actual interface.
+
+feasibility_gates:
+  vk:
+    state: unverified
+    decision: Confirm access before implementing ingestion or a full interface.
+    experiment:
+      - Register/configure an authorized application and identify the supported token type.
+      - Call groups.getById and wall.get against representative user-selected public communities.
+      - Confirm actual pagination, permitted fields and error behavior with those credentials.
+      - Include posts whose audio is region-restricted; determine whether text alone is sufficient.
+    guardrails:
+      - Public community visibility does not establish anonymous or unrestricted API access.
+      - Keep credentials server-side; record outcomes without tokens.
+      - If access is unavailable, stop and revisit scope; do not silently substitute scraping.
+      - Do not bypass regional restrictions or fetch protected audio.
+  spotify:
+    state: unverified
+    experiment:
+      - Verify album search with the intended application's currently permitted authorization flow.
+      - Confirm current development-mode eligibility, limits and target-market behavior.
+      - Test ambiguous artist/album titles, alternate editions and unavailable releases.
+    guardrails:
+      - SDK availability does not imply API access.
+      - Never request playback permissions just to open an album link.
+      - Do not represent a blocked or unavailable album as playable.
+  references_to_recheck:
+    - https://dev.vk.ru/ru/method/wall.get
+    - https://dev.vk.ru/ru/method/groups.getById
+    - https://dev.vk.ru/ru/api/getting-started
+    - https://dev.vk.ru/ru/api/access-token/service-token
+    - https://developer.spotify.com/documentation/web-api/reference/search
+    - https://developer.spotify.com/documentation/web-api/concepts/authorization
+    - https://developer.spotify.com/documentation/web-api/concepts/quota-modes
+
+proposed_behavior:
+  refresh:
+    - Deduplicate source posts by community identifier and post identifier.
+    - Keep source publication time, successful fetch progress and viewed time distinct.
+    - Persist fetched pages before advancing the successful ingestion checkpoint.
+    - Handle pinned posts, overlapping pages, interruption and retry without skipping posts.
+    - Bound the first import; ask the user to choose the historical lookback.
+    - Refreshing alone does not mark results as viewed.
+  matching:
+    - Prefer explicit artist/album text; use attachment metadata only when lawfully available.
+    - Keep extracted source values alongside normalized search values.
+    - Allow a post to describe multiple releases or contain no identifiable album.
+    - Auto-link only an unambiguous match; retain unresolved results with their VK links.
+    - Preserve multiple source-post references when the same album appears in several communities.
+    - Use explicit pending, matched, ambiguous, not_found and error states.
+    - Cache reusable lookup results and honor provider retry/rate-limit guidance.
+  styles_and_dates:
+    - Preserve source tags and allow unknown style; do not invent genre metadata.
+    - Distinguish source-post date from album-release date in the interface.
+    - Final sorting options and style normalization need representative source examples.
+  navigation:
+    - Open a Spotify album URL for a matched result.
+    - Open the original VK post for an unresolved result.
+    - Browser autoplay, Spotify login and device state remain outside navigation guarantees.
+
+out_of_scope:
+  - Application code, dependencies, credentials or live API calls during this scaffold task.
+  - VK HTML scraping, audio downloading, DRM or regional-access circumvention.
+  - Spotify playback control, an embedded player, playlist synchronization or library writes.
+  - Background scheduled ingestion until on-demand refresh is reliable.
+  - Importing Telegram code or database tables into this app.
+  - Shared user storage, SSO, shared databases or production deployment.
+  - A generic provider framework before there is a second real ingestion provider.
+
+open_decisions:
+  - Confirm final product name; music-discovery is a working name.
+  - Select representative VK community links and typical music posts.
+  - Confirm credentials and API access without committing secrets.
+  - Choose first-import lookback and behavior when removing a community.
+  - Define when a result becomes viewed and how mark-read/unread should work.
+  - Decide whether ambiguous candidates need manual selection in the first release.
+  - Decide whether duplicate albums are merged in the feed or shown per source post.
+  - Confirm target Spotify market and whether automatic playback is actually required.
+  - Decide how style tags are obtained, normalized and edited.
+  - Confirm whether EPs/singles are included alongside albums.
+
+acceptance:
+  - Supported credentials read selected communities without page scraping.
+  - Add/remove operates on a flat source list.
+  - Repeated refresh is idempotent; interrupted refresh resumes without losing persisted posts.
+  - Refresh progress and viewed state remain independently correct.
+  - An unambiguous match opens the intended Spotify album.
+  - Ambiguous/not-found results preserve the original VK link.
+  - API failures are visible and retryable rather than disguised as empty results.
+  - List/tile presentation and agreed date/style controls work with missing metadata.
+  - No credentials are exposed to the browser, repository or logs.

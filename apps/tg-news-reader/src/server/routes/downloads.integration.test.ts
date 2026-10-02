@@ -225,7 +225,7 @@ describe('Downloads routes (integration)', () => {
 
   describe('PATCH /api/downloads/:id/prioritize', () => {
     it('returns 404 for a missing task instead of silently succeeding', async () => {
-      vi.mocked(prioritizeTask).mockResolvedValueOnce(false as never);
+      vi.mocked(prioritizeTask).mockResolvedValueOnce(false);
       const res = await app.request('/api/downloads/99999/prioritize', { method: 'PATCH', headers });
       expect(res.status).toBe(404);
     });

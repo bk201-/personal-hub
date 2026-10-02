@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { and, asc, eq, gt, inArray, max, notInArray, or, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { Hono } from 'hono';
-import type { ChannelType, NewsItem } from '../../shared/types.js';
+import type { NewsItem } from '../../shared/types.js';
 import { db } from '../db/index.js';
 import { toNewsItem } from '../db/mappers.js';
 import { channels, downloads, news } from '../db/schema.js';
@@ -454,7 +454,7 @@ router.post('/:id/refresh', async (c) => {
   const msg = await fetchMessageById(channel.telegramId, row.telegramMsgId);
   if (!msg) return c.json({ error: 'Message not found on Telegram' }, 404);
 
-  const strategy = getChannelStrategy(channel.channelType as ChannelType);
+  const strategy = getChannelStrategy(channel.channelType);
   const flags = strategy.getItemFlags(msg);
 
   const [updated] = await db

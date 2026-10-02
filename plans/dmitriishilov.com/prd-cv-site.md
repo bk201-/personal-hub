@@ -2,9 +2,10 @@
 
 > Date: April 2026
 
-> Historical proposal inherited from the news repository. This CV site is not one
-> of personal-hub's implemented workspaces. Hosted deployment, public publishing
-> and CI proposals below remain unimplemented intent, not active instructions.
+> Historical proposal from the news repository, consolidated here on 2026-10-01.
+> The existing CV site's current worktree is now imported into `apps/dmitriishilov.com`.
+> Requirements below preserve the original intent, not verified implementation status; see the app README for current local behavior.
+> Hosted deployment, public publishing and CI proposals below remain inactive historical intent.
 
 ## Problem Statement
 

@@ -1,0 +1,28 @@
+---
+import Layout from "@/layouts/Layout.astro";
+const links = [
+  { name: "TG News Reader", url: "https://tg-news-reader.graycoast-407e8a98.westeurope.azurecontainerapps.io", icon: "📰" },
+  { name: "CV Site", url: "https://dmitriishilov.com", icon: "📄" },
+];
+---
+<Layout title="Links">
+  <head>
+    <meta name="robots" content="noindex, nofollow" />
+  </head>
+  <main class="mx-auto max-w-md px-4 py-16">
+    <h1 class="mb-8 text-center text-2xl font-bold text-skin-base">Quick Links</h1>
+    <div class="grid gap-4">
+      {links.map(({ name, url, icon }) => (
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="flex items-center gap-4 rounded-xl border border-skin-hue/20 bg-skin-button-accent/10 p-4 transition-all hover:bg-skin-button-accent/20 hover:scale-[1.02]"
+        >
+          <span class="text-2xl">{icon}</span>
+          <span class="text-sm font-medium text-skin-base">{name}</span>
+        </a>
+      ))}
+    </div>
+  </main>
+</Layout>

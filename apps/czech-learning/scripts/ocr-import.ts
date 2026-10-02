@@ -256,10 +256,8 @@ function recoverMissingFeminine(entries: WordEntry[]): WordEntry[] {
     const cz = entry.czech;
     let femCzech: string | null = null;
 
-    if (/an$/i.test(cz))
-      femCzech = cz.replace(/an$/i, 'anka'); // Australan→Australanka
-    else if (/[aá]n$/i.test(cz))
-      femCzech = cz + 'ka'; // Brit→Britka (Brit+ka)
+    if (/an$/i.test(cz)) femCzech = cz.replace(/an$/i, 'anka'); // Australan→Australanka
+    else if (/[aá]n$/i.test(cz)) femCzech = cz + 'ka'; // Brit→Britka (Brit+ka)
     else if (/[^aeiouáéíóúů]$/i.test(cz) && cz.length > 3) femCzech = cz + 'ka'; // fallback
 
     if (!femCzech) {

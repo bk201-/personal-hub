@@ -32,6 +32,8 @@
     "**/coverage",
     "**/data",
     "**/.idea",
+    "**/.astro",
+    "**/*.astro",
     ".local-validation",
     "docs/archive",
     "plans",

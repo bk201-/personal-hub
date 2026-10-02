@@ -25,23 +25,23 @@
     "test": "vitest run"
   },
   "peerDependencies": {
-    "@ant-design/icons": "^6.2.3",
-    "antd": "^6.4.3",
+    "@ant-design/icons": "^6.3.4",
+    "antd": "^6.6.5",
     "antd-style": "^4.1.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   },
   "devDependencies": {
-    "@ant-design/icons": "^6.2.3",
-    "@testing-library/react": "^16.3.2",
-    "@types/react": "^19.2.15",
-    "@types/react-dom": "^19.2.3",
-    "antd": "^6.4.3",
+    "@ant-design/icons": "^6.3.4",
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "antd": "^6.6.5",
     "antd-style": "^4.1.0",
-    "jsdom": "^29.1.1",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "typescript": "^6.0.3",
-    "vitest": "^4.1.7"
+    "jsdom": "^30.1.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
   }
 }

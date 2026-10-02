@@ -6,7 +6,6 @@
  */
 
 import { and, eq, inArray, sql } from 'drizzle-orm';
-import type { ChannelType } from '../../shared/types.js';
 import { NEWS_DEFAULT_FETCH_DAYS, NEWS_FETCH_LIMIT } from '../config.js';
 import { db } from '../db/index.js';
 import { channels, news } from '../db/schema.js';
@@ -175,7 +174,7 @@ export async function fetchChannelNews(channelId: number, opts: FetchChannelOpts
     throw new ChannelUnavailableError(error);
   }
 
-  const strategy = getChannelStrategy(channel.channelType as ChannelType);
+  const strategy = getChannelStrategy(channel.channelType);
 
   // Build rows to insert (filter via strategy, derive flags)
   const valuesToInsert = messages

@@ -71,8 +71,8 @@ async function getTaskWithContext(id: number): Promise<DownloadTask | null> {
   if (!row) return null;
   return {
     ...row,
-    type: row.type as DownloadTask['type'],
-    status: row.status as DownloadTask['status'],
+    type: row.type,
+    status: row.status,
     url: row.url ?? null,
     error: row.error ?? null,
     newsText: row.newsText || undefined,

@@ -70,7 +70,7 @@ function createTurndown(): TurndownService {
   td.addRule('figure', {
     filter: 'figure',
     replacement: (_content, node) => {
-      const el = node as unknown as HTMLElement;
+      const el = node;
       // If the figure contains an <img>, skip it (Turndown handles images natively).
       // Otherwise preserve the text content so nothing gets lost.
       if (el.querySelector?.('img')) return '';

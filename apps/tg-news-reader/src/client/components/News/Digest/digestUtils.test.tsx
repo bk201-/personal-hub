@@ -53,7 +53,7 @@ describe('inlineRefs', () => {
   it('returns non-string primitives unchanged', () => {
     expect(inlineRefs(null, refMap, onClick, chipClass)).toBeNull();
     expect(inlineRefs(undefined, refMap, onClick, chipClass)).toBeUndefined();
-    expect(inlineRefs(42 as unknown as React.ReactNode, refMap, onClick, chipClass)).toBe(42);
+    expect(inlineRefs(42, refMap, onClick, chipClass)).toBe(42);
   });
 
   it('processes children inside React elements recursively', () => {

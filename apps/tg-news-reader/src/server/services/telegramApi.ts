@@ -241,7 +241,7 @@ export async function getChannelInfo(username: string): Promise<ChannelInfo> {
       name = (entity as Api.Channel).title ?? name;
       resolvedUsername = (entity as Api.Channel).username ?? null;
       try {
-        const full = await tg.invoke(new _Api.channels.GetFullChannel({ channel: entity as Api.Channel }));
+        const full = await tg.invoke(new _Api.channels.GetFullChannel({ channel: entity }));
         description = (full.fullChat as Api.ChannelFull).about || null;
       } catch {
         // description not critical

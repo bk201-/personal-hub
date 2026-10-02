@@ -1,15 +1,16 @@
 # personal-hub
 
-Private, local-only npm workspaces for two independent personal applications. App package names and versions are retained from their source repositories.
+Private, local-only npm workspaces for three independent personal applications. App package names and versions are retained from their source repositories.
 
-| Workspace              | Purpose                                  |
-| ---------------------- | ---------------------------------------- |
-| `apps/tg-news-reader`  | Telegram news, articles and media        |
-| `apps/czech-learning`  | Czech vocabulary and learning            |
-| `packages/browser`     | Reusable browser mechanics               |
-| `packages/auth-server` | Reusable server authentication mechanics |
+| Workspace                | Purpose                                  |
+| ------------------------ | ---------------------------------------- |
+| `apps/tg-news-reader`    | Telegram news, articles and media        |
+| `apps/czech-learning`    | Czech vocabulary and learning            |
+| `apps/dmitriishilov.com` | Static Astro CV and personal links       |
+| `packages/browser`       | Reusable browser mechanics               |
+| `packages/auth-server`   | Reusable server authentication mechanics |
 
-Apps consume the shared packages, not each other. Domain schemas, routes, policies and UI remain in the apps. Databases, migrations, credentials, users and sessions remain independent; this is not single sign-on.
+The two React apps consume the shared packages, not each other. The Astro CV site remains independent, with no React shell or shared authentication. Domain schemas, routes, policies and UI remain in the apps. Databases, migrations, credentials, users and sessions remain independent; this is not single sign-on.
 
 ## Local development
 
@@ -20,12 +21,15 @@ npm ci
 npm run dev:news
 # In another terminal:
 npm run dev:czech
+# Or the independent CV site:
+npm run dev:cv
 ```
 
-| App   | Client                | API                   | Vite preview          |
-| ----- | --------------------- | --------------------- | --------------------- |
-| News  | http://localhost:5173 | http://localhost:3173 | http://localhost:4173 |
-| Czech | http://localhost:5174 | http://localhost:3174 | http://localhost:4174 |
+| App        | Client                | API                   | Vite preview                  |
+| ---------- | --------------------- | --------------------- | ----------------------------- |
+| News       | http://localhost:5173 | http://localhost:3173 | http://localhost:4173         |
+| Czech      | http://localhost:5174 | http://localhost:3174 | http://localhost:4174         |
+| CV (Astro) | http://127.0.0.1:4321 | None                  | http://127.0.0.1:4321 (Astro) |
 
 Each app manages its own local environment and `data/` directory. Supply local configuration separately for each app; credentials and populated databases are intentionally not migrated. Cookies are not isolated by port: news uses `tg_news_reader_refresh_token` and `tg_news_reader_media_token`, while Czech uses `czech_learning_refresh_token`. Legacy cookies are not reused; sign in separately. Preview serves a built client; it does not start the API.
 
@@ -48,7 +52,7 @@ Run authentication only when deliberately configuring your own local account; it
 
 ## Checks
 
-The shared baseline is TypeScript 6, Vite 8, Oxlint and Oxfmt. Root commands run the corresponding workspace checks:
+React apps and shared packages use TypeScript 7. The root and CV workspace retain TypeScript 6 because `@astrojs/check` and its hoisted Volar dependencies require the JavaScript compiler API that TypeScript 7 no longer provides. A CV-local dependency alone does not constrain Volar's compiler resolution. Vitest and its coverage provider use version 5 across their consumers. Oxlint and Oxfmt are shared; React apps use Vite 8 while the CV workspace retains Astro and its compatible Vite. Root build/typecheck include the CV site; server builds and tests remain scoped to workspaces that provide them. Oxfmt handles supported non-Astro files; the CV workspace retains explicit `format:astro` / `format:astro:check` scripts using its existing Prettier Astro plugin, outside the root formatting check.
 
 ```sh
 npm run build
@@ -68,7 +72,9 @@ npm run lint --workspace tg-news-reader
 npm run format:check --workspace czech-learning
 ```
 
-Use `package.json` scripts as the authoritative command list. Install dependencies only at the root; workspace commands run with that workspace as their working directory. Before invoking an app script directly after a clean checkout, run `npm run build:shared`. Rebuild shared packages after editing them; root dev/build/test commands do this on entry.
+Use `package.json` scripts as the authoritative command list. Install dependencies only at the root; workspace commands run with that workspace as their working directory. Before invoking a React app script directly after a clean checkout, run `npm run build:shared`. Rebuild shared packages after editing them; React root dev/build/test commands do this on entry. The CV site needs no shared build.
+
+After changing dependency ranges, update the root lockfile with `npm install` before using `npm ci`. Upgrade peer-coupled packages together (notably `vitest` and `@vitest/coverage-v8`), including shared-package consumers. If npm retains an incompatible older peer from the lockfile, use a targeted `npm update` for the related packages and inspect `npm ls --all`; do not bypass peer checks with `--force` or `--legacy-peer-deps`.
 
 ## Independent production artifacts
 
@@ -79,17 +85,33 @@ docker build -f apps\tg-news-reader\Dockerfile -t personal-hub-news:local .
 docker build -f apps\czech-learning\Dockerfile -t personal-hub-czech:local .
 ```
 
+Each Dockerfile stays with its app, but `COPY` paths are relative to the repository-root build context, not the Dockerfile's directory. Both stages copy only the target app's manifest and required shared-package manifests, using the unchanged root lockfile. The builder explicitly copies the target app's build inputs, shared sources and common build scripts; no unrelated app sources or manifests are copied. Builder installs include the selected shared workspaces and root compiler tooling, not every workspace.
+
 These are separate images, not a combined server. Runtime working/data directories are `/app/apps/tg-news-reader` and `/app/apps/czech-learning`; expose ports 3173 and 3174 respectively. Supply independent credentials and volumes. The root `.dockerignore` excludes secrets, local data and build output; runtime installation uses `npm ci --omit=dev` scoped to its app.
 
 Each Vite build writes `dist/build-id.json` and embeds the same per-app identity in the client. Keep that file with its client/server artifacts. `/api/version` reports it with `Cache-Control: no-store`; a same-version rebuild produces a different identity. `APP_BUILD_ID` can provide an explicit build identity, but must agree between build and runtime. Update banners reload only after user action.
 
 Migration verification used separate production-only dependency layouts, Czech HTTP/static/auth/vocabulary smoke tests and news in-process auth/version tests, without Telegram credentials. Docker itself was available, but its Node base image was not cached; no image pull/build was performed under the local-only/no-registry constraint. Linux image execution and live Telegram remain unverified.
 
+The scoped Dockerfile inputs were also exercised in clean local fixtures: builder and production installs, dependency graphs, shared/app/server builds, production imports and in-memory SQLite smoke tests passed without unrelated app workspaces. This does not replace an actual Linux image build.
+
 ## Documentation and plans
+
+**Continue from the repository:** read [the continuation plan](plans/platform/continuation.yaml)
+for decisions, application status and remaining work from the original discussion.
+It is linked from `AGENTS.md`; a new repository-local agent session does not need Scout
+or the old chat. The Czech app is an OCR-focused early prototype whose redesign is
+still open, not the primary acceptance target for the migration.
+
+`apps/music-discovery` reserves a future VK-to-Spotify discovery app. It has no
+runtime or npm workspace yet. Its [draft PRD](plans/music-discovery/prd.yaml) and
+[implementation slices](plans/music-discovery/implementation.yaml) distinguish
+confirmed requirements from proposed behavior and unresolved provider access.
 
 - [Shared agent rules](AGENTS.md), [news domain guidance](apps/tg-news-reader/AGENTS.md), [Czech domain guidance](apps/czech-learning/AGENTS.md).
 - [News README](apps/tg-news-reader/README.md), [contribution checks](apps/tg-news-reader/CONTRIBUTING.md), [architecture notes](apps/tg-news-reader/docs/architecture.md), [roadmap](apps/tg-news-reader/ROADMAP.md).
 - [Czech historical plan](plans/czech-learning/czech-learning-app.md): moved from the Czech repository's `plans/`; original intent and unchecked acceptance criteria are retained. It is not an implementation-status report.
+- [CV README](apps/dmitriishilov.com/README.md), [CV PRD](plans/dmitriishilov.com/prd-cv-site.md) and [historical implementation plan](plans/dmitriishilov.com/cv-site.md). The PRD was found in news documentation and consolidated under the CV plans; no duplicate remains in the news app. Supporting PDF/photo stay with the relocated plan.
 - News had no populated plan files to migrate; its existing roadmap remains in the app.
 
 ## Local skills and provenance
@@ -102,6 +124,10 @@ Active project skills live only in root `.agents/skills/`:
 
 `skills-lock.json` deliberately contains no remote skill entries: the active skills are maintained in this repository, so retaining their old remote hashes would falsely describe their provenance.
 
+The CV import preserves the current unpublished worktree of `C:\Users\dshilov\WebstormProjects\dmitriishilov.com` (HEAD `fb3abfaf`, 10 commits), including its existing public PDF. Source files and index remain untouched. Its original history is retained under local `refs/archive/dmitriishilov.com/`, without altering monorepo ancestry or adding remotes. Verified source bundle, worktree/index snapshots and SHA256 provenance are stored in sibling `personal-hub-backup-20260930/cv-import/`.
+
 ## Inactive deployment history
 
 The former news deployment and auto-merge workflows are preserved unchanged under `docs/archive/tg-news-reader/.github/workflows/`, outside GitHub's root workflow discovery path. Deployment-only helper scripts are archived alongside in `scripts/`; `tg:auth:deploy` is no longer an active package command. [Setup history](docs/archive/tg-news-reader/.github/SETUP.md) and [Azure operations history](docs/archive/tg-news-reader/azure.md) explain the former standalone deployment only. No active deployment or publishing workflow is enabled by this migration; archived commands and resource identifiers are not setup instructions for personal-hub.
+
+The CV site's original deployment workflow is likewise preserved byte-for-byte under `docs/archive/dmitriishilov.com/.github/workflows/` and remains inactive. The CV import does not publish, push or deploy the site.

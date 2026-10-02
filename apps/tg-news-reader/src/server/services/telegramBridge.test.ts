@@ -106,7 +106,7 @@ describe('telegramBridge', () => {
     });
 
     it('replies with no_media when message is null', async () => {
-      mockFetchMessageById.mockResolvedValueOnce(null as any);
+      mockFetchMessageById.mockResolvedValueOnce(null);
 
       const worker = createFakeWorker();
       handleBridgeMessage(worker, createDownloadMsg(), 0);

@@ -59,18 +59,18 @@ class ResizeObserverMock {
   disconnect() {}
 }
 // Set on both globalThis and window to cover all access patterns
-globalThis.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver = ResizeObserverMock;
 if (typeof window !== 'undefined') {
-  window.ResizeObserver = ResizeObserverMock as unknown as typeof ResizeObserver;
+  window.ResizeObserver = ResizeObserverMock;
 }
 
 // Suppress jsdom "Not implemented" warnings — antd/rc-components trigger these; harmless in tests.
 // jsdom writes these via its virtualConsole → process.stderr, bypassing global console.
 const origStderrWrite = process.stderr.write.bind(process.stderr);
-process.stderr.write = ((chunk: unknown, ...args: unknown[]) => {
+process.stderr.write = (chunk: unknown, ...args: unknown[]) => {
   if (typeof chunk === 'string' && chunk.includes('Not implemented:')) return true;
   return origStderrWrite(chunk as string | Uint8Array, ...(args as []));
-}) as typeof process.stderr.write;
+};
 
 // isContentEditable polyfill — jsdom doesn't implement this getter
 if (typeof HTMLElement !== 'undefined' && !('isContentEditable' in HTMLElement.prototype)) {

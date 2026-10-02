@@ -100,8 +100,8 @@ export async function getActiveTasks(): Promise<DownloadTask[]> {
 
   return rows.map((r) => ({
     ...r,
-    type: r.type as DownloadTask['type'],
-    status: r.status as DownloadTask['status'],
+    type: r.type,
+    status: r.status,
     url: r.url ?? null,
     error: r.error ?? null,
     newsText: r.newsText || undefined,

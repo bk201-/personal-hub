@@ -1,0 +1,193 @@
+{
+  "basics": {
+    "name": "Dmitrii Shilov",
+    "label": "Software Developer Engineer",
+    "image": "/me_avatar.jpg",
+    "email": "sceletron@gmail.com",
+    "phone": "",
+    "url": "https://dmitriishilov.com",
+    "summary": "Software engineer with 17+ years of experience building and shipping full-stack JavaScript/TypeScript products for production environments. Delivered business-critical developer tooling, cloud services, and large-scale performance improvements across enterprise applications at Microsoft, EPAM, and Akvelon. Experienced in end-to-end software delivery, from product design and implementation through CI/CD and production operations.",
+    "theme": "default",
+    "location": {
+      "address": "",
+      "postalCode": "",
+      "city": "Prague",
+      "countryCode": "CZ",
+      "region": "Czechia"
+    },
+    "profiles": [
+      {
+        "network": "LinkedIn",
+        "username": "dmitry-shilov-prague",
+        "url": "https://linkedin.com/in/dmitry-shilov-prague"
+      },
+      {
+        "network": "GitHub",
+        "username": "bk201-",
+        "url": "https://github.com/bk201-"
+      },
+      {
+        "network": "Telegram",
+        "username": "baka201",
+        "url": "https://t.me/baka201"
+      }
+    ]
+  },
+  "work": [
+    {
+      "name": "Microsoft",
+      "position": "Software Developer Engineer",
+      "location_type": "On site",
+      "location": "Prague, Czechia",
+      "url": "https://microsoft.com",
+      "startDate": "2024-07-01",
+      "endDate": null,
+      "summary": "",
+      "highlights": [],
+      "responsibilities": [],
+      "achievements": [],
+      "skills": ["TypeScript", "React", "Azure"]
+    },
+    {
+      "name": "EPAM Systems",
+      "position": "Lead Software Engineer",
+      "location_type": "On site",
+      "location": "Prague, Czechia",
+      "url": "https://epam.com",
+      "startDate": "2023-08-01",
+      "endDate": "2024-06-01",
+      "summary": "Customer: Albert Heijn. Full-stack developer on Engineering Enablement project.",
+      "highlights": [
+        "Evolved internal plugins for Backstage (Spotify) developer portal",
+        "Designed and implemented internal tools to integrate with third-party cloud solutions",
+        "Led refactoring initiatives across the platform"
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "skills": ["Backstage", "Node.js", "React", "Nest.js", "Python", "Atlassian"]
+    },
+    {
+      "name": "EPAM Systems",
+      "position": "Senior Software Engineer",
+      "location_type": "On site",
+      "location": "Prague, Czechia",
+      "url": "https://epam.com",
+      "startDate": "2022-01-01",
+      "endDate": "2023-07-01",
+      "summary": "Customer: London Stock Exchange Group. Performance optimization across enterprise web applications.",
+      "highlights": [
+        "Conducted performance analysis and applied optimization techniques on 30+ web applications",
+        "Added heap snapshot capability to the QA framework",
+        "Coordinated cross-team task execution for performance improvements"
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "skills": ["Angular", "Angular.js", "jQuery", "DevTools", "Performance"]
+    },
+    {
+      "name": "Akvelon, Inc.",
+      "position": "Senior Software Engineer / Tech Lead",
+      "location_type": "On site",
+      "location": "Yaroslavl, Russia → Prague, Czechia",
+      "url": "https://akvelon.com",
+      "startDate": "2017-05-01",
+      "endDate": "2021-10-01",
+      "summary": "Outsourced to Microsoft across multiple projects. Led teams of 6 engineers on greenfield projects.",
+      "highlights": [
+        "Built Azure Blockchain Extension for VS Code from scratch — architecture, MVP, CI/CD, cross-platform support",
+        "Designed Node.js tool deploying k8s infrastructure for Hyperledger private blockchain",
+        "Built CHIE suite: OKR Tool, QaaS (KPI tracking), Cloud Readiness Criteria — Angular/Ionic/.NET Core/Azure",
+        "Created TypeScript decorator library implementing Retry, Circuit-breaker, Memo, Singleton, FSM patterns",
+        "Contributed to Hyperledger Fabric SDK",
+        "Implemented 40+ BI reports (MSSQL/SSRS) for Valant customers"
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "skills": ["TypeScript", "Node.js", "React", "Angular", "Ionic", ".NET Core", "Azure", "k8s", "VS Code API"]
+    },
+    {
+      "name": "Tensor (Тензор)",
+      "position": "Software Engineer → Team Lead",
+      "location_type": "On site",
+      "location": "Yaroslavl, Russia",
+      "url": "",
+      "startDate": "2008-02-01",
+      "endDate": "2017-04-01",
+      "summary": "9 years building a large-scale enterprise web platform — from junior engineer to team lead.",
+      "highlights": [
+        "Designed and implemented SSR, i18n/l10n, and HTML generator from custom XAML-like modules",
+        "Built a resource bundler (like Webpack) with tree shaking using Node.js, Grunt, Gulp, ESprima",
+        "Refactored monolith into 200+ micro-frontend modules with RequireJS",
+        "Designed and implemented BFF service with Node.js, Redis, Express, Cluster",
+        "Built client-side desktop app with WebSocket communication, file system access, and cryptography (Java applets, C#, ActiveX)"
+      ],
+      "responsibilities": [],
+      "achievements": [],
+      "skills": ["JavaScript", "Node.js", "Redis", "Express", "C#", "Java", "PostgreSQL", "RequireJS"]
+    }
+  ],
+  "volunteer": [],
+  "education": [
+    {
+      "institution": "Yaroslavl Demidov State University",
+      "url": "",
+      "area": "Mathematics and Computer Science",
+      "studyType": "Specialist",
+      "startDate": "2004-09-01",
+      "endDate": "2009-06-01",
+      "score": "",
+      "courses": []
+    }
+  ],
+  "awards": [],
+  "certificates": [],
+  "publications": [],
+  "skills": [
+    { "name": "TypeScript", "level": "Senior", "keywords": [] },
+    { "name": "JavaScript", "level": "Senior", "keywords": [] },
+    { "name": "React", "level": "Senior", "keywords": [] },
+    { "name": "Node", "level": "Senior", "keywords": [] },
+    { "name": "HTML", "level": "Senior", "keywords": [] },
+    { "name": "CSS", "level": "Senior", "keywords": [] },
+    { "name": "Tailwind", "level": "Senior", "keywords": [] },
+    { "name": "Git", "level": "Senior", "keywords": [] },
+    { "name": "GitHub", "level": "Senior", "keywords": [] }
+  ],
+  "languages": [
+    {
+      "language": "Russian",
+      "fluency": "Native"
+    },
+    {
+      "language": "English",
+      "fluency": "Upper-Intermediate"
+    }
+  ],
+  "interests": [],
+  "references": [],
+  "projects": [
+    {
+      "name": "TG News Reader",
+      "isActive": true,
+      "description": "Full-stack personal Telegram news reader with media lightbox, download workers, i18n, TOTP auth, and Azure deploy.",
+      "highlights": ["React 19", "Hono", "SQLite/Turso", "Drizzle ORM", "Azure Container Apps", "691 tests"],
+      "url": "https://github.com/bk201-/tg-news-reader",
+      "github": "https://github.com/bk201-/tg-news-reader"
+    },
+    {
+      "name": "jira-prepare-commit-msg",
+      "isActive": true,
+      "description": "Git hook that automatically prepends JIRA ticket ID to commit messages.",
+      "highlights": ["Node.js", "Git hooks", "Open source"],
+      "url": "https://github.com/bk201-/jira-prepare-commit-msg",
+      "github": "https://github.com/bk201-/jira-prepare-commit-msg"
+    },
+    {
+      "name": "dmitriishilov.com",
+      "isActive": true,
+      "description": "Personal CV site built with Astro (SSG), auto-generated PDF via Playwright, deployed to Azure Static Web Apps.",
+      "highlights": ["Astro", "Tailwind CSS", "Azure Static Web Apps"],
+      "url": "https://dmitriishilov.com"
+    }
+  ]
+}
