@@ -1,0 +1,97 @@
+name: CI
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Quality checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:shared
+      - run: npm run test:ci
+      - run: npm run lint
+      - run: npm run format:check
+      # format:astro:check has 38 pre-existing failing files; enable after a separate baseline cleanup.
+
+  workspace:
+    name: Workspace (${{ matrix.workspace }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace:
+          - '@personal-hub/auth-server'
+          - '@personal-hub/browser'
+          - tg-news-reader
+          - czech-learning
+          - dmitriishilov.com
+    env:
+      WORKSPACE: ${{ matrix.workspace }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24.15.0'
+          cache: npm
+      - run: npm ci
+      - run: npm run build:shared
+      - run: npm run typecheck --workspace "$WORKSPACE" --if-present
+      - run: npm run build --workspace "$WORKSPACE"
+      - run: npm run build:server --workspace "$WORKSPACE" --if-present
+      # Keep the root test entry point and its sanitized environment, including for filtered tests.
+      - run: npm test -- --workspace "$WORKSPACE"
+
+  docker:
+    name: Docker (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [tg-news-reader, czech-learning]
+    env:
+      APP: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Verify Linux production image
+        run: docker build --file "apps/$APP/Dockerfile" --tag "personal-hub-$APP:ci" .
+
+  required:
+    name: Build & Lint
+    if: ${{ always() }}
+    needs: [quality, workspace, docker]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RESULTS: ${{ toJSON(needs) }}
+    steps:
+      - name: Require every CI job to succeed
+        run: |
+          printf '%s\n' "$RESULTS"
+          jq --exit-status 'length == 3 and all(.[]; .result == "success")' <<< "$RESULTS"

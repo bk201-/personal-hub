@@ -1,16 +1,17 @@
 # Local contribution checks
 
-This app belongs to the private [personal-hub workspace](../../README.md). Work remains local for review; publication, version bumps and deployment are not automatic completion steps.
+This app belongs to the public [personal-hub monorepo](../../README.md). Work remains local for review unless publication is authorized; version bumps and production deployment are separate decisions.
 
 ## Validation
 
 Run from the repository root after the root `npm ci`:
 
 ```sh
+npm run build:shared
 npm run build --workspace tg-news-reader
 npm run build:server --workspace tg-news-reader
 npm run typecheck --workspace tg-news-reader
-npm run test --workspace tg-news-reader
+npm test -- --workspace tg-news-reader
 npm run lint --workspace tg-news-reader
 npm run format:check --workspace tg-news-reader
 ```
@@ -25,4 +26,4 @@ Use the root `local-review` skill for a read-only review and validation summary.
 
 Document changed behavior in the relevant architecture section, not as extra always-loaded agent instructions. Write new documentation and comments in English; retain historical source-language plans.
 
-Former GitHub protection, auto-merge and deployment instructions are [archived](../../docs/archive/tg-news-reader/.github/SETUP.md). They do not apply to this local-only repository.
+Current CI and deployment rollout rules live in the [root README](../../README.md#github-automation). Former standalone GitHub instructions remain [archived](../../docs/archive/tg-news-reader/.github/SETUP.md); do not use them to configure monorepo permissions or deployment.

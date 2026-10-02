@@ -1,6 +1,6 @@
 # personal-hub
 
-Private, local-only npm workspaces for three independent personal applications. App package names and versions are retained from their source repositories.
+Public GitHub monorepo for three independent personal applications. The npm workspaces remain private to prevent package publication. App package names and versions are retained from their source repositories.
 
 | Workspace                | Purpose                                  |
 | ------------------------ | ---------------------------------------- |
@@ -59,6 +59,7 @@ npm run build
 npm run build:server
 npm run typecheck
 npm run test
+npm run test:ci
 npm run lint
 npm run format:check
 ```
@@ -76,6 +77,26 @@ Use `package.json` scripts as the authoritative command list. Install dependenci
 
 After changing dependency ranges, update the root lockfile with `npm install` before using `npm ci`. Upgrade peer-coupled packages together (notably `vitest` and `@vitest/coverage-v8`), including shared-package consumers. If npm retains an incompatible older peer from the lockfile, use a targeted `npm update` for the related packages and inspect `npm ls --all`; do not bypass peer checks with `--force` or `--legacy-peer-deps`.
 
+## GitHub automation
+
+GitHub discovers workflows only in root `.github/workflows`, not inside `apps/`. CI separates the runnable apps and shared packages while using the root lockfile and shared tooling. `music-discovery` is still plans-only.
+
+- `ci.yml` validates PRs, `main` pushes and manual runs without production secrets. It covers workspace typechecks, builds and tests, repository lint/format, and news/Czech Docker builds using each app's Dockerfile with the root build context. `Build & Lint` is the stable aggregate result. The full Astro template formatting check remains outside CI because 38 imported templates already fail it; run it when changing those templates and keep baseline cleanup separate.
+- `auto-merge.yml` is separate from untrusted PR builds. Owner PR automation is opt-in through `AUTO_MERGE_OWNER_PRS=true`; native GitHub auto-merge is already allowed, but neither option substitutes for required CI. The workflow only squash-merges the current, successful, same-repository owner PR head. Workflow/automation-helper changes require a manual merge. It uses `GITHUB_TOKEN`, not the legacy PAT, and explicitly dispatches CI on `main` after merging because token-created pushes do not trigger normal push workflows.
+- `deploy-tg-news-reader.yml` belongs only to news. `TG_NEWS_READER_DEPLOY_ENABLED` must explicitly equal `true` before production jobs can run. Czech and CV do not inherit news's Azure resources or credentials.
+
+**Rollout:** publish the workflow changes through a feature PR, establish a successful `Build & Lint` run, then make that check required in the `Protect main` ruleset with branches kept up to date. Keep the existing no-bypass PR/force-push/deletion protection. Owner auto-merge should be enabled only after the required check is enforced and its downstream CI path is verified.
+
+**Production cutover is separate.** The old `bk201-/tg-news-reader` deployment remains the current source until explicitly switched. Disable its `Build Main` workflow and wait for all in-flight deployments to finish before activating the monorepo deploy gate. The new workflow fails closed if it cannot confirm that state. Approve the downtime explicitly with `TG_NEWS_READER_CUTOVER_MODE=stop-before-start`: the workflow stops and drains old replicas before starting the new revision, rather than allowing rolling overlap of Telegram clients.
+
+Before activation, protect the `tg-news-reader-production` environment with required reviewers and a main-only branch policy. The existing news app must use port 3173, exactly one container, `minReplicas=maxReplicas=1`, its image-default command and existing persistent storage mounted at `/app/apps/tg-news-reader/data`. The workflow refuses incompatible infrastructure; it does not create storage, migrate data or change Telegram sessions. Keep previous images/revisions for operator recovery. On a failed cutover it deliberately does not restart the old revision automatically, which could overlap a still-running new client.
+
+The deployment only consumes successful CI for the current `main` SHA. Changed paths are compared with the last successful deployment recorded for `tg-news-reader-production`, so unrelated app merges cannot lose an earlier pending news change. The first deployment considers the complete tree. A manual dispatch with `force_news_deploy=true` can redeploy an unchanged, verified SHA for recovery. Image archives contain no runtime data and are publicly downloadable artifacts in this repository.
+
+The twelve legacy Actions secrets were copied to `personal-hub` without changing their values or token permissions. Their presence is not authorization to use them in PR builds, and it does not prove the old PAT can administer the new repository. Deployment activation, secret rotation and infrastructure changes require explicit authorization.
+
+Secret scanning and push protection are enabled on the public repository. Keep production credentials in GitHub secrets or app-local configuration, never in workflow files, fixtures or CI logs.
+
 ## Independent production artifacts
 
 From the root, build each image with the root directory as its context:
@@ -91,9 +112,9 @@ These are separate images, not a combined server. Runtime working/data directori
 
 Each Vite build writes `dist/build-id.json` and embeds the same per-app identity in the client. Keep that file with its client/server artifacts. `/api/version` reports it with `Cache-Control: no-store`; a same-version rebuild produces a different identity. `APP_BUILD_ID` can provide an explicit build identity, but must agree between build and runtime. Update banners reload only after user action.
 
-Migration verification used separate production-only dependency layouts, Czech HTTP/static/auth/vocabulary smoke tests and news in-process auth/version tests, without Telegram credentials. Docker itself was available, but its Node base image was not cached; no image pull/build was performed under the local-only/no-registry constraint. Linux image execution and live Telegram remain unverified.
+Initial migration verification used separate production-only dependency layouts, Czech HTTP/static/auth/vocabulary smoke tests and news in-process auth/version tests, without Telegram credentials. On October 2, both actual Dockerfiles also built successfully with the root context. Disposable, network-isolated runtime smoke checks exercised the resulting images; no production configuration or Telegram session was supplied. These checks do not establish production readiness or live Telegram behavior.
 
-The scoped Dockerfile inputs were also exercised in clean local fixtures: builder and production installs, dependency graphs, shared/app/server builds, production imports and in-memory SQLite smoke tests passed without unrelated app workspaces. This does not replace an actual Linux image build.
+The scoped Dockerfile inputs were also exercised in clean local fixtures: builder and production installs, dependency graphs, shared/app/server builds, production imports and in-memory SQLite smoke tests passed without unrelated app workspaces.
 
 ## Documentation and plans
 
@@ -119,7 +140,8 @@ confirmed requirements from proposed behavior and unresolved provider access.
 Active project skills live only in root `.agents/skills/`:
 
 - `local-plan` consolidates the Czech repository's `write-a-prd`, `prd-to-plan` and `prd-to-issues` into local requirements, vertical slices and reviewable work items. Their original lock recorded `mattpocock/skills`; these are locally adapted instructions, not unchanged upstream installations.
-- `local-review` replaces news `create-pr` with read-only change review and local validation. It does not bump versions or perform Git/remote writes.
+- `local-review` provides read-only change review and local validation.
+- `create-pr` adapts the restored news publication skill to explicit authorization, protected `main`, workspace-aware checks and unchanged app versions.
 - Czech `grill-me` duplicated the globally available interview capability and was removed locally. Global skills were not changed; the local planning workflow is self-contained and does not require them.
 
 `skills-lock.json` deliberately contains no remote skill entries: the active skills are maintained in this repository, so retaining their old remote hashes would falsely describe their provenance.
@@ -128,6 +150,6 @@ The CV import preserves the current unpublished worktree of `C:\Users\dshilov\We
 
 ## Inactive deployment history
 
-The former news deployment and auto-merge workflows are preserved unchanged under `docs/archive/tg-news-reader/.github/workflows/`, outside GitHub's root workflow discovery path. Deployment-only helper scripts are archived alongside in `scripts/`; `tg:auth:deploy` is no longer an active package command. [Setup history](docs/archive/tg-news-reader/.github/SETUP.md) and [Azure operations history](docs/archive/tg-news-reader/azure.md) explain the former standalone deployment only. No active deployment or publishing workflow is enabled by this migration; archived commands and resource identifiers are not setup instructions for personal-hub.
+The former news deployment and auto-merge workflows are preserved unchanged under `docs/archive/tg-news-reader/.github/workflows/`, outside GitHub's root workflow discovery path. Their monorepo replacements live in root `.github/workflows` with the rollout gates described above. Deployment-only helper scripts are archived alongside in `scripts/`; `tg:auth:deploy` is no longer an active package command. [Setup history](docs/archive/tg-news-reader/.github/SETUP.md) and [Azure operations history](docs/archive/tg-news-reader/azure.md) explain the former standalone deployment only; archived commands and resource identifiers are not setup instructions for personal-hub.
 
 The CV site's original deployment workflow is likewise preserved byte-for-byte under `docs/archive/dmitriishilov.com/.github/workflows/` and remains inactive. The CV import does not publish, push or deploy the site.

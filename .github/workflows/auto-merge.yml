@@ -1,0 +1,48 @@
+name: Auto-merge owner PRs
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+# Do not cancel between merging and dispatching main CI.
+concurrency:
+  group: owner-pr-auto-merge
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: >-
+      vars.AUTO_MERGE_OWNER_PRS == 'true' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: write
+      contents: write
+      pull-requests: write
+    steps:
+      # workflow_run loads this workflow from the default branch, never the PR.
+      # Execute only that same trusted revision; no PR checkout, artifacts, cache or dependency install.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ github.workflow_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24.15.0'
+          package-manager-cache: false
+      - name: Validate, squash-merge exact head, and dispatch main CI
+        run: node scripts/ci/auto-merge.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          AUTO_MERGE_OWNER_PRS: ${{ vars.AUTO_MERGE_OWNER_PRS }}
+      # Opt in only after manually reviewing/merging the migration and verifying CI on main.
+      # Workflow/CI helper changes always require a manual merge. No PAT or deployment secrets are used.
+      # If dispatch fails after merging, rerun this job; already-merged matching PRs retry dispatch.
