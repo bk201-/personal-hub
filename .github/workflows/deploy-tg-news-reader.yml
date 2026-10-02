@@ -19,7 +19,7 @@ on:
 # Also set TG_NEWS_READER_CUTOVER_MODE=stop-before-start after approving downtime,
 # checking the existing app's persistent mount, port and singleton scale settings.
 # Preflight requires port 3173, min=max=1, one container using the image command,
-# and existing Azure Files mounted at /app/apps/tg-news-reader/data. This workflow
+# and existing Azure Files mounted at /app/data. This workflow
 # does not create storage, move data or change sessions/environment variables.
 permissions: {}
 

@@ -2,7 +2,7 @@ title: personal-hub continuation plan
 updated: "2026-10-02"
 purpose: Continue repository work without access to the originating Scout conversation.
 path_convention: Repository-relative unless explicitly described as a sibling directory.
-status: Monorepo published; workflow migration PR has passed hosted CI and production cutover remains gated.
+status: Workflow migration merged; legacy news container compatibility restored locally, awaiting publication.
 
 decisions:
   - One repository, independently runnable applications; not a combined backend or deployment.
@@ -17,8 +17,8 @@ decisions:
 
 snapshot:
   observed: "2026-10-02"
-  branch: dev/dshilov/monorepo-actions
-  head: 142bcd2
+  branch: dev/dshilov/news-container-compatibility
+  head: 9680a33
   committed:
     - "8aa4248: news relocation with original main ancestry retained."
     - "aabf3ca: Czech current-worktree baseline, not its unborn repository index."
@@ -27,10 +27,12 @@ snapshot:
     - "f01c0a2: monorepo snapshot including CV, music plans and tooling upgrades."
     - "9cac36f: restored PR skill and organized gitignore; published on main."
     - "142bcd2: workspace CI, owner automation and gated news deployment; published in PR 2."
+    - "a42885f: PR 2 squash-merged after explicit approval; main CI passed."
+    - "9680a33: dependency update merged separately; preserved as the compatibility change baseline."
   history_note: Six unpublished migration commits were rewritten to GitHub noreply before first publication; original news ancestry was retained.
   pending:
-    - Review and merge workflow migration PR 2; automatic owner merging remains disabled.
-    - Verify main CI, then explicitly enable desired owner automation and separately plan production cutover.
+    - Review the legacy news runtime compatibility change; owner automation and production remain disabled.
+    - Explicitly enable desired owner automation and separately plan production cutover.
   interpretation: >-
     This is a dated handoff, not a live Git status report. Inspect the current
     branch and diff before changing anything. Existing uncommitted work is
@@ -58,8 +60,8 @@ github_repository:
     - Legacy Build Main remains enabled in the source repository; monorepo production activation remains off.
     - Secret scanning and push protection were enabled for the public monorepo on October 2.
   pending:
-    - Review and merge workflow PR 2, then verify CI on main.
-    - Enable AUTO_MERGE_OWNER_PRS only after main CI and the explicit downstream-dispatch path are accepted.
+    - Review and publish the news runtime compatibility change before production activation.
+    - Main CI has passed; enable AUTO_MERGE_OWNER_PRS only when the explicit downstream-dispatch path is accepted.
     - Confirm personal-account Copilot repository access; matching cloud-agent configuration does not prove access.
     - Perform a separately authorized news production cutover after disabling and draining the old deployment.
   guardrails:
@@ -77,6 +79,13 @@ applications:
       - apps/tg-news-reader/README.md
       - apps/tg-news-reader/ROADMAP.md
     local_acceptance: User reported on October 2 that tg-news-reader works locally; individual workflows and data coverage were not enumerated.
+    container_contract:
+      decision: Preserve the standalone runtime paths instead of changing Azure mounts for the monorepo layout.
+      working_directory: /app
+      entry_point: /app/dist/server/index.js
+      data_mount: /app/data
+      port: 3173
+      local_validation: Image rebuilt; network-isolated checks passed for static/version/shared imports and retained SQLite/media in a disposable /app/data volume.
     remaining: Representative container/runtime acceptance and separately authorized production cutover.
   czech:
     directory: apps/czech-learning
@@ -154,10 +163,10 @@ suggested_next_work:
         - Exercise representative app workflows using isolated configuration/data before production activation.
       done_when: Actual Linux containers run independently; Windows layout checks alone are insufficient.
     - id: publication-decision
-      state: main_published_workflow_migration_pending
+      state: workflows_merged_runtime_compatibility_local
       work:
-        - Review and merge workflow PR 2; the first hosted CI run and required aggregate are established.
-        - Verify CI on main before enabling owner automation.
+        - Workflow PR 2 is merged and main CI has passed; required aggregate protection is enforced.
+        - Publish reviewed compatibility changes through another PR before production cutover.
         - Separately decide runtime hosting, releases, secrets and deployment activation.
       guardrail: Archived deployment workflows are historical reference, not runnable setup instructions.
 
@@ -187,7 +196,7 @@ workflow_migration_validation:
     - Hosted CI run 37019081969 passed all nine jobs for commit 142bcd2, including both Linux images and all workspaces.
   limitations:
     - Existing CV template formatting fails its full Astro formatting check; preserve imported templates outside the requested scope.
-    - The workflow PR remains open; main CI and actual owner-automation execution are not yet exercised.
+    - Workflow PR 2 is merged and main CI run 37021804716 passed; actual owner-automation execution remains unexercised.
     - TG_NEWS_READER_DEPLOY_ENABLED and AUTO_MERGE_OWNER_PRS remain unset/off.
     - No production deployment, live Telegram smoke or Azure infrastructure change was performed.
 

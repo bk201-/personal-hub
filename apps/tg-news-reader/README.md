@@ -29,6 +29,10 @@ Configure this app's local credentials separately before initialization; account
 
 Client: `http://localhost:5173`; API: `http://localhost:3173`; Vite preview: `http://localhost:4173`. Preview requires a separate running API. Installation and lockfile management belong to the repository root.
 
+## Container compatibility
+
+Build with this workspace's Dockerfile and the monorepo root context. The runtime retains the standalone layout exposed to operators: working directory `/app`, `node dist/server/index.js`, data mounted at `/app/data`, and port 3173. The build uses workspace paths internally, but existing news data mounts do not move. Shared-package resolution is retained through the installed workspace tree and the `/app/dist` link.
+
 ## Documentation
 
 - [AGENTS](AGENTS.md): domain invariants and change guidance.

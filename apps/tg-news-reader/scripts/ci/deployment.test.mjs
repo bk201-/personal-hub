@@ -20,6 +20,19 @@ const jobs = Object.fromEntries(
   ),
 );
 const steps = (job) => job.split(/(?=^ {6}- )/m).slice(1);
+test('news runtime preserves the standalone working directory, volume, port and entry point', () => {
+  const dockerfile = readFileSync(new URL('../../Dockerfile', import.meta.url), 'utf8');
+  const runtime = dockerfile.split(/^FROM .+ AS runner\s*$/m)[1];
+  assert.ok(runtime);
+  assert.equal([...runtime.matchAll(/^WORKDIR (.+)$/gm)].at(-1)[1].trim(), '/app');
+  assert.match(runtime, /^VOLUME \/app\/data\s*$/m);
+  assert.match(runtime, /^EXPOSE 3173\s*$/m);
+  assert.deepEqual(JSON.parse(runtime.match(/^CMD (\[.+\])\s*$/m)[1]), [
+    'node',
+    '--disable-warning=DEP0040',
+    'dist/server/index.js',
+  ]);
+});
 function patch(object, path, changes) {
   const keys = path.split('.').filter(Boolean);
   Object.assign(
@@ -348,13 +361,13 @@ const existingApp = () => ({
     {
       name: 'news',
       image: `${image}:previous`,
-      mounts: [{ mountPath: '/app/apps/tg-news-reader/data', volumeName: 'data' }],
+      mounts: [{ mountPath: '/app/data', volumeName: 'data' }],
     },
   ],
   volumes: [{ name: 'data', storageType: 'AzureFile', storageName: 'news-storage' }],
 });
 
-test('settings and preflight require an existing singleton, correct port, image and persistent monorepo data', async (t) => {
+test('settings and preflight preserve the existing singleton, port, image and legacy data mount', async (t) => {
   assert.deepEqual(config, { sha, server: env.ACR_LOGIN_SERVER, app: 'news-app', group: 'news-group' });
   for (const key of Object.keys(env)) assert.throws(() => settings({ ...env, [key]: '' }), /settings/);
   const app = existingApp();
@@ -365,7 +378,7 @@ test('settings and preflight require an existing singleton, correct port, image 
     ['two maximum', 'scale', { maxReplicas: 2 }],
     ['wrong port', '', { port: 3000 }],
     ['missing mount', 'containers.0', { mounts: [] }],
-    ['legacy mount', 'containers.0.mounts.0', { mountPath: '/app/data' }],
+    ['workspace mount instead of legacy data', 'containers.0.mounts.0', { mountPath: '/app/apps/tg-news-reader/data' }],
     ['ephemeral volume', 'volumes.0', { storageType: 'EmptyDir' }],
     ['missing storage', 'volumes.0', { storageName: undefined }],
     ['unrelated image', 'containers.0', { image: `${config.server}/czech-learning:latest` }],
