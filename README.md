@@ -97,6 +97,8 @@ The deployment only consumes successful CI for the current `main` SHA. Changed p
 
 The twelve legacy Actions secrets were copied to `personal-hub` without changing their values or token permissions. Their presence is not authorization to use them in PR builds, and it does not prove the old PAT can administer the new repository. Deployment activation, secret rotation and infrastructure changes require explicit authorization.
 
+The news deployment guard logs each check with a `[deployment-guard]` prefix and reports the failing stage, credential name (`GH_TOKEN` or `SOURCE_PAT`, never its value), and HTTP status or a fixed policy-failure reason. Network, timeout, aborted-request and invalid-JSON failures use fixed diagnostic messages; unexpected errors remain redacted. It never prints raw exceptions, response bodies or headers. An HTTP status narrows the investigation but does not by itself prove token expiry. Diagnostics do not relax the current-main CI, source-workflow or no-overlap requirements.
+
 Secret scanning and push protection are enabled on the public repository. Keep production credentials in GitHub secrets or app-local configuration, never in workflow files, fixtures or CI logs.
 
 ## Independent production artifacts

@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import test from 'node:test';
 import { retainBackups } from './artifacts.mjs';
 import { createDeployment, imageDeletionCandidates, settings, validateApp } from './azure.mjs';
-import { githubApi, SOURCE, SOURCE_WORKFLOW, TARGET, verifyHandoff } from './guard.mjs';
+import { githubApi, runGuard, SOURCE, SOURCE_WORKFLOW, TARGET, verifyHandoff } from './guard.mjs';
 import { affectsNews, lastSuccessfulDeployment, pathsSinceDeployment, PRODUCTION_ENVIRONMENT } from './paths.mjs';
 
 const sha = 'a'.repeat(40);
@@ -268,6 +269,21 @@ test('deployment baseline lookup paginates and fails closed on invalid metadata 
   assert.throws(() => pathsSinceDeployment('main', () => sha), /comparison SHA/);
 });
 const activeStatuses = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
+
+test('guard CLI identifies missing credentials without exposing environment values', () => {
+  const result = spawnSync(process.execPath, [resolve(import.meta.dirname, 'guard.mjs')], {
+    encoding: 'utf8',
+    env: {
+      SYSTEMROOT: process.env.SYSTEMROOT,
+      GH_TOKEN: '',
+      SOURCE_PAT: 'test-only-source-secret',
+    },
+  });
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Initialize target API \(GH_TOKEN\).*Missing GitHub authorization/);
+  assert.doesNotMatch(`${result.stdout}${result.stderr}`, /test-only-source-secret/);
+});
+
 function guardFixture() {
   const sourcePath = `/repos/${SOURCE}/actions/workflows/${SOURCE_WORKFLOW}`;
   const f = { main: sha, run: ciRun(), latest: [ciRun()], state: 'disabled_manually', active: '', sourceCalls: [] };
@@ -338,7 +354,155 @@ test('GitHub transport fails closed without a token or permission and never disc
       assert.equal(options.redirect, 'error');
       return { ok: false, status, json: () => assert.fail('Do not read denied response bodies') };
     });
-    await assert.rejects(api(`/repos/${TARGET}/branches/main`), new RegExp(`failed \\(${status}\\)`));
+    await assert.rejects(api(`/repos/${TARGET}/branches/main`), new RegExp(`failed \\(HTTP ${status}\\)`));
+  }
+});
+
+function guardDiagnosticsFixture() {
+  const f = guardFixture();
+  f.logs = [];
+  f.errors = [];
+  f.env = {
+    GH_TOKEN: 'test-only-target-secret',
+    SOURCE_PAT: 'test-only-source-secret',
+    DEPLOY_SHA: sha,
+    CI_RUN_ID: '101',
+    CI_RUN_ATTEMPT: '2',
+    CUTOVER_MODE: 'stop-before-start',
+  };
+  f.fetcher = async (url, options) => {
+    const parsed = new URL(url);
+    const api = options.headers.authorization === `Bearer ${f.env.GH_TOKEN}` ? f.options.target : f.options.source;
+    return { ok: true, status: 200, json: () => api(`${parsed.pathname}${parsed.search}`, options.method) };
+  };
+  f.execute = () =>
+    runGuard({
+      env: f.env,
+      fetcher: f.fetcher,
+      log: (message) => f.logs.push(message),
+      logError: (message) => f.errors.push(message),
+    });
+  return f;
+}
+
+test('guard diagnostics name each check and retain the successful read-only handoff', async () => {
+  const f = guardDiagnosticsFixture();
+  assert.equal(await f.execute(), 0);
+  assert.deepEqual(f.errors, []);
+  for (const step of [
+    'Initialize target API (GH_TOKEN)',
+    'Initialize source API (SOURCE_PAT)',
+    'Validate cutover mode',
+    'Validate CI identity',
+    'Read current main (GH_TOKEN)',
+    'Read CI run (GH_TOKEN)',
+    'Read CI workflow (GH_TOKEN)',
+    'Validate current CI approval',
+    'Check for superseding CI (GH_TOKEN)',
+    'Read source workflow (SOURCE_PAT)',
+    ...activeStatuses.map((status) => `Check source ${status} runs (SOURCE_PAT)`),
+    'Recheck source workflow disabled (SOURCE_PAT)',
+  ]) {
+    assert.equal(f.logs.shift(), `[deployment-guard] ${step}`);
+  }
+  assert.deepEqual(f.logs, ['Current-main CI and read-only source deployment handoff verified.']);
+});
+
+test('guard diagnostics identify the credential boundary and HTTP status without reading error bodies', async (t) => {
+  for (const token of ['GH_TOKEN', 'SOURCE_PAT']) {
+    for (const status of [401, 403, 404, 429, 500]) {
+      await t.test(`${token} HTTP ${status}`, async () => {
+        const f = guardDiagnosticsFixture();
+        const original = f.fetcher;
+        f.fetcher = async (url, options) =>
+          options.headers.authorization === `Bearer ${f.env[token]}`
+            ? { ok: false, status, json: () => assert.fail('Error bodies must not be read') }
+            : original(url, options);
+        assert.equal(await f.execute(), 1);
+        const step = token === 'GH_TOKEN' ? 'Read current main (GH_TOKEN)' : 'Read source workflow (SOURCE_PAT)';
+        assert.deepEqual(f.errors, [
+          `Deployment guard failed at "${step}": GitHub authorization/read failed (HTTP ${status}).`,
+        ]);
+        assert.doesNotMatch(f.logs.join('\n'), /handoff verified/);
+        assert.doesNotMatch([...f.logs, ...f.errors].join('\n'), /test-only-/);
+      });
+    }
+  }
+});
+
+test('guard diagnostics report policy failures without printing untrusted values', async (t) => {
+  const cases = [
+    ['missing source token', 'env', { SOURCE_PAT: '' }, /Initialize source API \(SOURCE_PAT\).*Missing/],
+    ['cutover mode', 'env', { CUTOVER_MODE: 'private-mode-value' }, /Validate cutover mode.*approve/],
+    ['CI identity', 'env', { DEPLOY_SHA: 'private-sha-value' }, /Validate CI identity.*Invalid/],
+    ['main changed', '', { main: otherSha }, /Read current main \(GH_TOKEN\).*no longer main/],
+    ['CI rerun', 'run', { run_attempt: 3 }, /Validate current CI approval.*no longer valid/],
+    ['superseded CI', '', { latest: [ciRun(), ciRun({ id: 102 })] }, /Check for superseding CI.*superseded/],
+    ['source enabled', '', { state: 'active' }, /Read source workflow \(SOURCE_PAT\).*disabled manually/],
+    ...activeStatuses.map((active) => [
+      `source ${active}`,
+      '',
+      { active },
+      new RegExp(`Check source ${active} runs.*outstanding`),
+    ]),
+  ];
+  for (const [name, path, changes, message] of cases) {
+    await t.test(name, async () => {
+      const f = guardDiagnosticsFixture();
+      patch(f, path, changes);
+      assert.equal(await f.execute(), 1);
+      assert.equal(f.errors.length, 1);
+      assert.match(f.errors[0], message);
+      assert.doesNotMatch([...f.logs, ...f.errors].join('\n'), /private-|test-only-|handoff verified/);
+    });
+  }
+});
+
+test('guard diagnostics suppress raw network, parser and unexpected errors', async (t) => {
+  const cases = [
+    [
+      'network',
+      async () => {
+        throw new TypeError('private-network-details');
+      },
+      /network or redirect error/,
+    ],
+    [
+      'timeout',
+      async () => {
+        throw new DOMException('private-timeout-details', 'TimeoutError');
+      },
+      /timed out/,
+    ],
+    [
+      'abort',
+      async () => {
+        throw new DOMException('private-abort-details', 'AbortError');
+      },
+      /aborted/,
+    ],
+    [
+      'JSON',
+      async () => ({
+        ok: true,
+        status: 200,
+        json: () => {
+          throw new SyntaxError('private-response-body');
+        },
+      }),
+      /not valid JSON/,
+    ],
+    ['unexpected shape', async () => ({ ok: true, status: 200, json: async () => null }), /Unexpected error/],
+  ];
+  for (const [name, fetcher, message] of cases) {
+    await t.test(name, async () => {
+      const f = guardDiagnosticsFixture();
+      f.fetcher = fetcher;
+      assert.equal(await f.execute(), 1);
+      assert.match(f.errors[0], /Read current main \(GH_TOKEN\)/);
+      assert.match(f.errors[0], message);
+      assert.doesNotMatch([...f.logs, ...f.errors].join('\n'), /private-|test-only-|handoff verified/);
+    });
   }
 });
 
