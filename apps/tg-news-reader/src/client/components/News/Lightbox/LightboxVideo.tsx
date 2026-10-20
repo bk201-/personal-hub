@@ -18,6 +18,10 @@ const useStyles = createStyles(
     max-width: ${size ? 'none' : '100%'};
     max-height: ${size ? 'none' : '100%'};
     transform: rotate(${angle}deg);
+    /* Chromium can retain a pre-resize controls width when navigating between clips. */
+    &::-webkit-media-controls {
+      width: 100%;
+    }
   `,
   }),
 );
