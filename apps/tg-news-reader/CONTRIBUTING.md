@@ -20,6 +20,8 @@ Lint uses Oxlint; formatting uses Oxfmt. Use targeted tests while iterating, the
 
 Add tests for changed domain behavior using the existing Vitest patterns. For regressions, reproduce the failure before fixing it. Database/route tests should use disposable fixtures rather than a user's database.
 
+`LoginPage` tests use fake timers and `fireEvent` inside async `act` to control form validation and Ant Design debounce updates. Their teardown unmounts the tree, runs pending callbacks while jsdom still provides `window`, and asserts that no timers remain before restoring real timers. Keep this ordering: unmount alone does not cancel every delayed Ant Design update, and callbacks running after environment teardown can fail an otherwise passing test suite.
+
 ## Review and documentation
 
 Use the root `local-review` skill for a read-only review and validation summary. Keep unrelated changes intact. Preserve app package names and versions unless a version change is explicitly requested.

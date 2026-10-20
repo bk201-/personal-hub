@@ -1,14 +1,40 @@
-import { screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderWithProviders } from '../../__tests__/renderWithProviders';
 import { useAuthStore } from '../../store/authStore';
 import { LoginPage } from './LoginPage';
 
+async function submitCredentials(password: string) {
+  await act(async () => {
+    fireEvent.change(screen.getByPlaceholderText('auth.email_placeholder'), { target: { value: 'a@b.com' } });
+    fireEvent.change(screen.getByPlaceholderText('auth.password_placeholder'), { target: { value: password } });
+    fireEvent.click(screen.getByRole('button', { name: 'auth.login_button' }));
+    await vi.runAllTimersAsync();
+  });
+}
+
+async function cleanupLoginPage() {
+  cleanup();
+  // Ant Design's form debounce can outlive unmount; flush it before jsdom removes window.
+  await act(async () => {
+    await vi.runOnlyPendingTimersAsync();
+  });
+}
+
 describe('LoginPage', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    vi.useFakeTimers();
     useAuthStore.setState({ accessToken: null, user: null, isCheckingAuth: false });
+  });
+
+  afterEach(async () => {
+    try {
+      await cleanupLoginPage();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('renders email and password inputs and submit button', () => {
@@ -18,8 +44,36 @@ describe('LoginPage', () => {
     expect(screen.getByRole('button', { name: 'auth.login_button' })).toBeInTheDocument();
   });
 
+  it('finishes pending form updates before the browser environment is removed', async () => {
+    renderWithProviders(<LoginPage />);
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+
+    await cleanupLoginPage();
+    expect(vi.getTimerCount()).toBe(0);
+
+    vi.stubGlobal('window', undefined);
+    try {
+      await vi.runAllTimersAsync();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('does not submit empty required fields', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch');
+    renderWithProviders(<LoginPage />);
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'auth.login_button' }));
+      await vi.runAllTimersAsync();
+    });
+
+    expect(screen.getByPlaceholderText('auth.email_placeholder')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByPlaceholderText('auth.password_placeholder')).toHaveAttribute('aria-invalid', 'true');
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it('calls fetch on form submit with credentials', async () => {
-    const user = userEvent.setup();
     const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -31,23 +85,18 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('auth.email_placeholder'), 'a@b.com');
-    await user.type(screen.getByPlaceholderText('auth.password_placeholder'), 'pass123');
-    await user.click(screen.getByRole('button', { name: 'auth.login_button' }));
+    await submitCredentials('pass123');
 
-    await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith(
-        '/api/auth/login',
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.stringContaining('a@b.com'),
-        }),
-      );
-    });
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/auth/login',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ email: 'a@b.com', password: 'pass123' }),
+      }),
+    );
   });
 
   it('shows error on failed login', async () => {
-    const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve({ error: 'Invalid credentials' }),
@@ -55,17 +104,12 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('auth.email_placeholder'), 'a@b.com');
-    await user.type(screen.getByPlaceholderText('auth.password_placeholder'), 'wrong');
-    await user.click(screen.getByRole('button', { name: 'auth.login_button' }));
+    await submitCredentials('wrong');
 
-    await waitFor(() => {
-      expect(screen.getByRole('alert')).toBeInTheDocument();
-    });
+    expect(screen.getByRole('alert')).toBeInTheDocument();
   });
 
   it('shows TOTP step when server requires it', async () => {
-    const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: false,
       json: () => Promise.resolve({ requiresTOTP: true }),
@@ -73,17 +117,12 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('auth.email_placeholder'), 'a@b.com');
-    await user.type(screen.getByPlaceholderText('auth.password_placeholder'), 'pass');
-    await user.click(screen.getByRole('button', { name: 'auth.login_button' }));
+    await submitCredentials('pass');
 
-    await waitFor(() => {
-      expect(screen.getByText('auth.totp_prompt')).toBeInTheDocument();
-    });
+    expect(screen.getByText('auth.totp_prompt')).toBeInTheDocument();
   });
 
   it('sets auth store on successful login', async () => {
-    const user = userEvent.setup();
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: true,
       json: () =>
@@ -95,12 +134,8 @@ describe('LoginPage', () => {
 
     renderWithProviders(<LoginPage />);
 
-    await user.type(screen.getByPlaceholderText('auth.email_placeholder'), 'a@b.com');
-    await user.type(screen.getByPlaceholderText('auth.password_placeholder'), 'pass');
-    await user.click(screen.getByRole('button', { name: 'auth.login_button' }));
+    await submitCredentials('pass');
 
-    await waitFor(() => {
-      expect(useAuthStore.getState().accessToken).toBe('jwt-token');
-    });
+    expect(useAuthStore.getState().accessToken).toBe('jwt-token');
   });
 });
