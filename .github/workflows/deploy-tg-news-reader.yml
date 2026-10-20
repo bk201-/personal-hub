@@ -12,11 +12,10 @@ on:
         type: boolean
         default: false
 
-# Activation is an operator decision, NOT part of the migration. Configure the
-# tg-news-reader-production environment with required reviewers and a main-only branch policy.
-# Disable source workflow 249856757 and finish/cancel all its outstanding runs
-# separately. The read-only handoff guard never disables or cancels anything.
-# Also set TG_NEWS_READER_CUTOVER_MODE=stop-before-start after approving downtime,
+# The legacy repository's Actions are disabled and drained. Deployment uses only
+# this repository's GITHUB_TOKEN; no legacy repository token or API is required.
+# Keep the tg-news-reader-production environment restricted to main.
+# Set TG_NEWS_READER_CUTOVER_MODE=stop-before-start after approving downtime,
 # checking the existing app's persistent mount, port and singleton scale settings.
 # Preflight requires port 3173, min=max=1, one container using the image command,
 # and existing Azure Files mounted at /app/data. This workflow
@@ -152,10 +151,9 @@ jobs:
         with:
           node-version: '24'
 
-      - name: Verify source handoff and recheck CI (read-only)
+      - name: Recheck current-main CI and cutover approval (read-only)
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_PAT: ${{ secrets.PAT_TOKEN }}
         run: node apps/tg-news-reader/scripts/ci/guard.mjs
 
       - name: Log in to Azure
@@ -178,11 +176,9 @@ jobs:
           docker build --file apps/tg-news-reader/Dockerfile --tag "$ACR_LOGIN_SERVER/tg-news-reader:$DEPLOY_SHA" .
 
       # Building can take a while. Fail closed again immediately before writes.
-      # PAT_TOKEN exists ONLY in these read-only source guard invocations.
-      - name: Recheck source handoff and current CI before registry writes (read-only)
+      - name: Recheck current-main CI before registry writes (read-only)
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_PAT: ${{ secrets.PAT_TOKEN }}
         run: node apps/tg-news-reader/scripts/ci/guard.mjs
 
       - name: Log in to ACR
@@ -211,10 +207,9 @@ jobs:
           compression-level: 0
           if-no-files-found: error
 
-      - name: Recheck source handoff and current CI before cutover (read-only)
+      - name: Recheck current-main CI before cutover (read-only)
         env:
           GH_TOKEN: ${{ github.token }}
-          SOURCE_PAT: ${{ secrets.PAT_TOKEN }}
         run: node apps/tg-news-reader/scripts/ci/guard.mjs
 
       # No canary, second app/session, automatic rollback or rolling overlap.

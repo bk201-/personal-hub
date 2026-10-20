@@ -1,8 +1,32 @@
 title: personal-hub continuation plan
-updated: "2026-10-02"
+updated: "2026-10-20"
 purpose: Continue repository work without access to the originating Scout conversation.
 path_convention: Repository-relative unless explicitly described as a sibling directory.
-status: Production cutover and drain-fix publication authorized; recovery copies prepared and drain correction ready for protected-main publication.
+status: Monorepo news production cutover completed successfully; old deployment disabled and one healthy new replica serving all traffic.
+
+automation_update:
+  observed: "2026-10-20"
+  authorization: Owner explicitly approved enabling owner PR auto-merge and automatic news production deployment.
+  AUTO_MERGE_OWNER_PRS: "true"
+  owner_pr: "PR 5 auto-merged as 2d56e14775a54c1c0602a2f5a477b12a9774da63; downstream main CI dispatched."
+  production_environment: Required reviewers removed; main-only branch policy and disabled admin bypass preserved.
+  deployment_policy: Relevant successful current-main CI deploys automatically; failed CI still blocks deployment.
+  current_blocker: "PR 8 diagnostics confirmed HTTP 401 when reading the legacy source workflow. This detachment removes that dependency; deployment success must be checked separately. The bot-dispatched CI event-chain issue remains."
+  ci_fix: "PR 7 merged as b12a7ee; LoginPage timer cleanup fixed the main CI failure. All 112 news test files / 1348 tests passed locally, and hosted CI passed."
+  diagnostics: "PR 8 merged as 4e137a7; safe guard stage/status diagnostics identified the legacy SOURCE_PAT failure."
+  other_pull_requests: "PRs 1-5, 7 and 8 are merged. Dependabot PR 6 (shell-quote and concurrently) remains open with successful original CI; owner-only auto-merge does not cover bot PRs."
+  legacy_detachment:
+    authorization: Owner explicitly requested disabling all Actions in the old repository and fully detaching personal-hub.
+    source_repository: bk201-/tg-news-reader
+    repository_actions_enabled: false
+    ordinary_workflows: Build Main, PR Check and the one-time transfer workflow are disabled_manually.
+    system_workflow_note: GitHub refuses individual disabling of its managed Dependabot Updates workflow (HTTP 422); repository-wide Actions are disabled.
+    outstanding_runs: "queued=0, in_progress=0, waiting=0, pending=0, requested=0 after disabling Actions."
+    secret: PAT_TOKEN removed from personal-hub; no credential values read or changed elsewhere.
+    implementation: Guard and workflow no longer require a legacy token or call the legacy repository; current-main CI, cutover mode, Azure compatibility and replica-drain checks remain.
+    validation: "202 automation tests passed, including target-only requests without legacy credentials and fail-closed CI/cutover checks."
+    publication: Owner authorized publishing and merging this detachment through a protected-main PR on October 20; deployment outcome must be checked separately.
+  history_note: The October 2 snapshots below retain initial rollout settings; this update supersedes their pending auto-merge activation, per-deployment approval and renewable source-PAT requirements.
 
 decisions:
   - One repository, independently runnable applications; not a combined backend or deployment.
@@ -11,14 +35,14 @@ decisions:
   - Shared authentication implementation does not mean shared users, sessions, databases or SSO.
   - Preserve original application histories and runtime data as reference and recovery sources.
   - personal-hub is public; the standalone tg-news-reader repository is private.
-  - Commit/push/PR publication and production activation require explicit authorization.
+  - Commit/push/PR publication requires explicit authorization; owner PR auto-merge and automatic news deployment after successful main CI were explicitly authorized on October 20, 2026.
   - Use dev/dshilov/* for working branches.
   - Current source code and scripts are authoritative; historical plans describe intent, not completion.
 
 snapshot:
   observed: "2026-10-02"
-  branch: dev/dshilov/news-drain-latency
-  head: f462998
+  branch: main
+  head: "2259423"
   committed:
     - "8aa4248: news relocation with original main ancestry retained."
     - "aabf3ca: Czech current-worktree baseline, not its unborn repository index."
@@ -30,10 +54,11 @@ snapshot:
     - "a42885f: PR 2 squash-merged after explicit approval; main CI passed."
     - "9680a33: dependency update merged separately; preserved as the compatibility change baseline."
     - "f462998: PR 3 merged; legacy news runtime compatibility published and main CI passed."
+    - "2259423: PR 4 merged; pre-downtime historical replica verification published and main CI passed."
   history_note: Six unpublished migration commits were rewritten to GitHub noreply before first publication; original news ancestry was retained.
   pending:
-    - Review and publish the local drain correction before executing the authorized short-downtime production cutover.
-    - Publish the authorized drain correction before enabling production; owner automation remains separately disabled.
+    - Keep the old deploy disabled; future relevant current-main deployments require protected-environment approval.
+    - Owner auto-merge activation and personal-account Copilot access remain separate decisions.
   interpretation: >-
     This is a dated handoff, not a live Git status report. Inspect the current
     branch and diff before changing anything. Existing uncommitted work is
@@ -58,12 +83,12 @@ github_repository:
     - The source repository is now private; personal-hub is public.
     - Protect main ruleset 24365619 requires PRs with zero approvals and resolved review threads, blocks deletion/force-push and has no bypass actors.
     - Build & Lint is required from GitHub Actions app 15368, with strict up-to-date branches, after a successful hosted run.
-    - Legacy Build Main remains enabled in the source repository; monorepo production activation remains off.
+    - Legacy Build Main is disabled and drained; monorepo news deployment is active with required environment approval.
     - Secret scanning and push protection were enabled for the public monorepo on October 2.
   pending:
     - Main CI has passed; enable AUTO_MERGE_OWNER_PRS only when the explicit downstream-dispatch path is accepted.
     - Confirm personal-account Copilot repository access; matching cloud-agent configuration does not prove access.
-    - Complete the authorized news cutover after resolving the recorded preflight blockers, then disable and drain the old deployment.
+    - Renew the source-reading PAT before expiry; do not re-enable the old deploy alongside the monorepo.
   guardrails:
     - The twelve source secrets were copied through a destination-encrypted handoff; no values were exposed or token permissions expanded.
     - The temporary transfer branch/artifact were deleted and its workflow disabled; source main and runtime were not changed.
@@ -72,22 +97,31 @@ github_repository:
 production_cutover:
   observed: "2026-10-02"
   authorization: User approved the singleton cutover, then explicitly approved correcting the drain algorithm through commit, push, PR and merge before continuing.
-  state: Paused before source workflow disablement or production activation.
+  state: Completed successfully; source workflow remains disabled and new protected deployment is enabled.
+  successful_run: https://github.com/bk201-/personal-hub/actions/runs/37032087106
+  deployment_id: 6812802844
+  deployed_sha: 2259423aca8302abd30a0e5f15f65e17655291dc
+  environment_success_at: "2026-10-02T16:20:18Z"
   environment:
     name: tg-news-reader-production
     id: 23311119030
     required_reviewer: bk201-
     branch_policy: Only the main branch; no tag policy.
     admin_bypass: false
-    self_review: Allowed for the single-owner repository; no deployment approval submitted.
+    self_review: Allowed for the single-owner repository; both initial and successful retry runs approved under explicit operator authorization without bypass.
   azure:
     subscription: f7758f68-5127-4e40-b8bf-3bd367b448a9
     resource_group: personal-apps-rg
     app: tg-news-reader
-    active_revision: tg-news-reader--rdc977a55
-    retained_revisions: 101
+    active_revision: tg-news-reader--r2259423a-37032087106-1
+    deployed_image_digest: sha256:5c2d7c9729fb67881907bd022f969be75b50fa0f10e313f9c08aad1ad68771c0
+    old_revision: tg-news-reader--rdc977a55
+    old_revision_state: Inactive; actual replica list confirmed empty after cutover.
+    new_revision_state: Healthy, exactly one Running replica, 100 percent ingress traffic.
     runtime: One healthy replica, Single mode, min=max=1, external port 3173, image-default command, Azure Files at /app/data.
     health: Database OK; Telegram session not expired and connection not delayed.
+    version: 1.34.2
+    build_id: tg-news-reader:83ddf40e-ff35-4a86-8db5-655ae44a7d41
   recovery:
     image: personalapps-hpebd4enbyftf4c2.azurecr.io/tg-news-reader:dc977a5538269498817b977e8993e2f4c8694cf5
     digest: sha256:fded7a166c6296aa003f310188113a3d6e824fc6c0d04e79ffc49c3ecedbad27
@@ -114,12 +148,31 @@ production_cutover:
     implementation: Prove inactive historical revisions have zero actual replicas before stopping; reuse cutover-local proofs only while full inventories confirm unchanged inactive identities.
     invalidation: Activity, disappearance or changed image invalidates proof; new revisions require actual replica reads; proof does not survive another cutover call.
     regression: 101-revision fixture proves all historical reads precede deactivation and normal downtime replica reads remain constant; 174 automation tests passed.
-    limitation: Hosted downtime remains unmeasured; API delays and readiness still affect the outage duration.
-    next: Publish the authorized correction through protected main and verify main CI before cutover.
-  unchanged:
-    - Source Build Main 249856757 remains active; latest observed run 36148766366 completed successfully.
-    - TG_NEWS_READER_DEPLOY_ENABLED, TG_NEWS_READER_CUTOVER_MODE and AUTO_MERGE_OWNER_PRS remain unset.
-    - No revision stopped/started, image deployed, session changed or application data restored.
+    publication: PR 4 merged as 2259423aca8302abd30a0e5f15f65e17655291dc; PR CI 37029666484 and main CI 37029921622 passed.
+    live_rehearsal: Actual Azure read-only rehearsal queried all 100 historical replica lists in 418 seconds before its first blocked mutation; zero Azure writes.
+    observation: Public health sampling saw an unhealthy interval at 16:16:57Z and healthy new-build responses from 16:19:38Z; sampling also saw an earlier transient failure, so this is not an exact availability measurement.
+  resolved_handoff_blocker:
+    run: https://github.com/bk201-/personal-hub/actions/runs/37030254797
+    deployment_id: 6812483893
+    result: qualify succeeded; deploy failed at Verify source handoff and recheck CI before Azure login or any runtime operation.
+    evidence:
+      - Runner SHA, CI run/attempt and stop-before-start mode match the expected current main.
+      - Both runner tokens were present and masked; the same guard and inputs pass with the authorized local GitHub identity.
+      - Source Build Main is disabled_manually; every nonterminal run status was empty.
+    resolution: Owner replaced PAT_TOKEN at 2026-10-02T16:09:30Z after source-only fine-grained Actions read instructions; the unchanged hosted guard passed on retry.
+    permission_guardrail: The broader local OAuth token was not copied into Actions; source credentials are used only for read-only handoff checks.
+  activation:
+    source_build_main: disabled_manually
+    source_workflow_id: 249856757
+    source_drained: queued/in_progress/waiting/pending/requested all zero before dispatch
+    TG_NEWS_READER_DEPLOY_ENABLED: "true"
+    TG_NEWS_READER_CUTOVER_MODE: stop-before-start
+    AUTO_MERGE_OWNER_PRS: unset
+  preserved:
+    - Same Azure app, storage mount, remote database, application environment and Telegram session; only the deployed image/revision changed.
+    - Old image digest remains readable after successful image retention; old revision and private database/media recovery copies remain available.
+    - No live data restore, Telegram reauthentication, second app or parallel client was used.
+  acceptance_limit: Production health/version and actual replica/traffic state confirmed; no authenticated user-interface workflow or manual data restore was exercised.
 
 applications:
   news:
@@ -138,7 +191,7 @@ applications:
       data_mount: /app/data
       port: 3173
       local_validation: Image rebuilt; network-isolated checks passed for static/version/shared imports and retained SQLite/media in a disposable /app/data volume.
-    remaining: Resolve recorded cutover blockers, then execute the authorized singleton production switch.
+    remaining: Routine owner acceptance of live reading/media/auth workflows; production cutover is complete.
   czech:
     directory: apps/czech-learning
     state: Early prototype, not a mature product whose entire UI must be preserved.
@@ -219,7 +272,7 @@ suggested_next_work:
       work:
         - Workflow PR 2 is merged and main CI has passed; required aggregate protection is enforced.
         - Runtime compatibility PR 3 is merged; main CI run 37025261293 passed.
-        - News production cutover is authorized but paused at the documented preflight blockers; other apps remain independent.
+        - News production cutover completed in run 37032087106; other apps remain independent and are not deployed by this workflow.
       guardrail: Archived deployment workflows are historical reference, not runnable setup instructions.
 
 historical_validation:

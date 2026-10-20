@@ -1,8 +1,6 @@
 import { pathToFileURL } from 'node:url';
 
 export const TARGET = 'bk201-/personal-hub';
-export const SOURCE = 'bk201-/tg-news-reader';
-export const SOURCE_WORKFLOW = 249856757;
 
 // Only errors constructed here may contribute text to public deployment logs.
 class GuardError extends Error {}
@@ -39,7 +37,7 @@ export function githubApi(token, fetcher = fetch) {
   };
 }
 
-export async function verifyHandoff({ target, source, sha, runId, attempt, mode, onStep = () => {} }) {
+export async function verifyDeployment({ target, sha, runId, attempt, mode, onStep = () => {} }) {
   onStep('Validate cutover mode');
   if (mode !== 'stop-before-start') throw new GuardError('Operator must approve stop-before-start downtime');
   onStep('Validate CI identity');
@@ -86,23 +84,6 @@ export async function verifyHandoff({ target, source, sha, runId, attempt, mode,
   ) {
     throw new GuardError('CI approval was superseded');
   }
-  onStep('Read source workflow (SOURCE_PAT)');
-  const old = await source(`/repos/${SOURCE}/actions/workflows/${SOURCE_WORKFLOW}`);
-  if (old.id !== SOURCE_WORKFLOW || old.name !== 'Build Main' || old.state !== 'disabled_manually') {
-    throw new GuardError('Source Build Main must be disabled manually before migration');
-  }
-  // Disabling a workflow does not stop queued, waiting-for-approval or live runs.
-  // Check every nonterminal REST status, not just the latest page of history.
-  for (const status of ['queued', 'in_progress', 'waiting', 'pending', 'requested']) {
-    onStep(`Check source ${status} runs (SOURCE_PAT)`);
-    const runs = await source(`/repos/${SOURCE}/actions/workflows/${SOURCE_WORKFLOW}/runs?status=${status}&per_page=1`);
-    if (runs.total_count !== 0 || !Array.isArray(runs.workflow_runs) || runs.workflow_runs.length !== 0) {
-      throw new GuardError('Source deployment has outstanding runs or cannot be verified');
-    }
-  }
-  onStep('Recheck source workflow disabled (SOURCE_PAT)');
-  const stillDisabled = await source(`/repos/${SOURCE}/actions/workflows/${SOURCE_WORKFLOW}`);
-  if (stillDisabled.state !== 'disabled_manually') throw new GuardError('Source workflow changed during handoff check');
 }
 
 export async function runGuard({
@@ -119,18 +100,15 @@ export async function runGuard({
   try {
     onStep('Initialize target API (GH_TOKEN)');
     const target = githubApi(env.GH_TOKEN, fetcher);
-    onStep('Initialize source API (SOURCE_PAT)');
-    const source = githubApi(env.SOURCE_PAT, fetcher);
-    await verifyHandoff({
+    await verifyDeployment({
       target,
-      source,
       sha: env.DEPLOY_SHA,
       runId: env.CI_RUN_ID,
       attempt: env.CI_RUN_ATTEMPT,
       mode: env.CUTOVER_MODE,
       onStep,
     });
-    log('Current-main CI and read-only source deployment handoff verified.');
+    log('Current-main CI and cutover approval verified.');
     return 0;
   } catch (error) {
     const reason = error instanceof GuardError ? error.message : 'Unexpected error (details suppressed)';
