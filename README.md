@@ -124,22 +124,24 @@ The scoped Dockerfile inputs were also exercised in clean local fixtures: builde
 
 ## Documentation and plans
 
-**Continue from the repository:** read [the continuation plan](plans/platform/continuation.yaml)
+**Continue from the repository:** read [the continuation plan](plans/platform/continuation.md)
 for decisions, application status and remaining work from the original discussion.
 It is linked from `AGENTS.md`; a new repository-local agent session does not need Scout
 or the old chat. The Czech app is an OCR-focused early prototype whose redesign is
 still open, not the primary acceptance target for the migration.
 
-`apps/music-discovery` reserves a future VK-to-Spotify discovery app. It has no
-runtime or npm workspace yet. Its [draft PRD](plans/music-discovery/prd.yaml) and
-[implementation slices](plans/music-discovery/implementation.yaml) distinguish
-confirmed requirements from proposed behavior and unresolved provider access.
+`apps/music-discovery` reserves VK Music Discovery, a future VK-to-Spotify discovery
+app with no runtime or npm workspace yet. Its [confirmed product requirements](plans/music-discovery/prd.md)
+and [proposed implementation slices](plans/music-discovery/implementation.md) cover
+the personal music queue, permanent activity journal and six-month rediscovery rule;
+provider access and usage-policy gates remain unresolved.
 
 - [Shared agent rules](AGENTS.md), [news domain guidance](apps/tg-news-reader/AGENTS.md), [Czech domain guidance](apps/czech-learning/AGENTS.md).
 - [News README](apps/tg-news-reader/README.md), [contribution checks](apps/tg-news-reader/CONTRIBUTING.md), [architecture notes](apps/tg-news-reader/docs/architecture.md), [roadmap](apps/tg-news-reader/ROADMAP.md).
+- [News requirements and interview answers](plans/tg-news-reader/prd.md) and [implementation plan](plans/tg-news-reader/implementation.md): digest grouping, filter management, search/day navigation and the first-priority Luna migration. All work remains planned, not implemented.
 - [Czech historical plan](plans/czech-learning/czech-learning-app.md): moved from the Czech repository's `plans/`; original intent and unchecked acceptance criteria are retained. It is not an implementation-status report.
 - [CV README](apps/dmitriishilov.com/README.md), [CV PRD](plans/dmitriishilov.com/prd-cv-site.md) and [historical implementation plan](plans/dmitriishilov.com/cv-site.md). The PRD was found in news documentation and consolidated under the CV plans; no duplicate remains in the news app. Supporting PDF/photo stay with the relocated plan.
-- News had no populated plan files to migrate; its existing roadmap remains in the app.
+- At import, news had no populated plan files to migrate; its existing roadmap remains in the app.
 
 ## Local skills and provenance
 

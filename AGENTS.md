@@ -4,14 +4,16 @@ Public GitHub repository with private npm workspaces. Leave changes available fo
 
 ## Continuing work
 
-When resuming the project, choosing next work, or revisiting migration/product decisions, read `plans/platform/continuation.yaml`. It records the chat handoff, intentional pending changes, product maturity and remaining milestones without requiring Scout. Inspect current Git state before treating its dated snapshot as current.
+When resuming the project, choosing next work, or revisiting migration/product decisions, read `plans/platform/continuation.md`. It records the chat handoff, intentional pending changes, product maturity and remaining milestones without requiring Scout. Inspect current Git state before treating its dated snapshot as current.
+
+Keep requirements, implementation plans and continuation handoffs in Markdown under root `plans/`. Use YAML for application, tooling and workflow configuration.
 
 ## Boundaries
 
 - `apps/tg-news-reader` owns Telegram, news, media, groups and their authorization.
 - `apps/czech-learning` owns vocabulary, imports and learning behavior.
 - `apps/dmitriishilov.com` owns the static Astro CV site and its content; it stays independent of the React shell and shared authentication.
-- `apps/music-discovery` is a plans-only placeholder. For its scope and unresolved provider access, read `plans/music-discovery/prd.yaml` and `implementation.yaml` in the same directory before adding runtime code.
+- `apps/music-discovery` is a plans-only placeholder. For its scope and unresolved provider access, read `plans/music-discovery/prd.md` and `implementation.md` in the same directory before adding runtime code.
 - `packages/browser` and `packages/auth-server` contain reusable mechanics. Apps depend on packages; shared runtime source never imports apps. Cross-app contract tests may exercise the real app adapters. Domain models, routes, schemas and policies stay in their app.
 - Each app owns its database, migrations, users, sessions, secrets and auth configuration. Sharing implementation does not create shared identity or storage.
 - Read the app's `AGENTS.md` before changing its domain. Read the root `README.md` for workspace commands and local ports.
