@@ -20,7 +20,7 @@
     "@alpinejs/collapse": "^3.17.4",
     "@astrojs/check": "^0.9.10",
     "alpinejs": "^3.17.4",
-    "astro": "^7.3.5",
+    "astro": "^7.4.7",
     "astro-font-picker": "^0.2.2",
     "hotkeypad": "^1.0.2"
   },
